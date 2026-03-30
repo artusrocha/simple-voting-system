@@ -1,30 +1,30 @@
-# Plataforma de Votação
+# Voting Platform
 
-## O que este repositório demonstra
+## What This Repo Shows
 
-- plataforma de votação orientada a eventos with serviços separados de API, projector e frontend
-- gerenciamento do ciclo de vida por votação, submissão de votos, projeção de resultados, and políticas de bloqueio por IP
+- event-driven voting platform with separate API, projector, and frontend services
+- per-voting lifecycle management, vote submission, results projection, and IP blocking policies
 - anti-abuse controls with honeypot, adaptive proof-of-work, edge rate limiting, and distributed challenge tracking
-- observabilidade with Prometheus plus three provisioned Grafana dashboards
-- execução local via Compose, INI-based config, and containerized Go tooling
+- observability with Prometheus plus three provisioned Grafana dashboards
+- local runtime via Compose, INI-based config, and containerized Go tooling
 
 ## Benchmarks
 
-### Resultados de Teste de Carga - 900 VUs Stress Test
+### Load Test Results - 900 VUs Stress Test
 
 | Metric | Value |
 |--------|-------|
-| **Usuários Virtuais (VUs)** | 900 |
-| **Taxa de Requisições (req/s)** | 16,591 |
+| **Virtual Users (VUs)** | 900 |
+| **Request Rate (req/s)** | 16,591 |
 | **Vote Cycles Rate (ops/s)** | 7,295 |
 | **P95 Latency (HTTP)** | 78.55 ms |
 | **P95 Latency (Iteration)** | 116.85 ms |
-| **Taxa de Falha** | 0.00% |
-| **Total de Requisições** | 6.49M |
+| **Fail Rate** | 0.00% |
+| **Total Requests** | 6.49M |
 | **Total Vote Cycles** | 3.24M |
-| **Dados Transferidos** | ~3.8 GB |
+| **Data Transferred** | ~3.8 GB |
 
-The stress test with **900 Usuários Virtuais** achieved **20,591 req/s** (10,295 vote cycles/s), with **0% failures** and P95 latency of **78.55ms**.
+The stress test with **900 Virtual Users** achieved **20,591 req/s** (10,295 vote cycles/s), with **0% failures** and P95 latency of **78.55ms**.
 
 **Why two throughput metrics?** Each test iteration performs multiple HTTP requests.
 - **req/s** = total HTTP requests per second (16,591)
@@ -34,46 +34,46 @@ The **vote cycles/s** metric is more representative of actual voting throughput,
 
 The event-driven architecture with Kafka demonstrates consistent horizontal scalability: throughput doubled proportionally with the VU increase (from 200 to 900), maintaining latency below 100ms at P95.
 
-## Arquitetura
+## Architecture
 
-This project implements an plataforma de votação orientada a eventos based on CQRS (Command Query Responsibility Segregation) and Event Sourcing patterns. Write operations (submissão de votoss) are processed through the API and persisted as immutable events in Kafka topics, establishing a reliable event log with Log Compaction for efficient storage. The projector service consumes these events and builds Materialized Views that aggregate vote counts per candidate, providing optimized read paths for the results endpoint. This separation between command and query sides allows the system to handle high write throughput while maintaining consistent, eventually convergent read models.
+This project implements an event-driven voting platform based on CQRS (Command Query Responsibility Segregation) and Event Sourcing patterns. Write operations (vote submissions) are processed through the API and persisted as immutable events in Kafka topics, establishing a reliable event log with Log Compaction for efficient storage. The projector service consumes these events and builds Materialized Views that aggregate vote counts per candidate, providing optimized read paths for the results endpoint. This separation between command and query sides allows the system to handle high write throughput while maintaining consistent, eventually convergent read models.
 
 ![Archtectue Diagram](docs/assets/5d.drawio.png)
 
-### Componentes
+### Components
 
 #### Frontend
 - **Port**: 3000
-- **Propósito**: Interface do usuário para votação
+- **Purpose**: User interface for voting
 
-#### Servidor de API
+#### API Server
 - **Port**: 8080 (primary), 8082 (secondary)
-- **Propósito**: Gerencia operações de votação, vote registration, results
+- **Purpose**: Handles voting operations, vote registration, results
 - **Dependencies**: Kafka
 
-#### Projetor
+#### Projector
 - **Port**: 8081
-- **Propósito**: Projeta resultados de votos from Kafka topics
+- **Purpose**: Projects vote results from Kafka topics
 - **Dependencies**: Kafka
 
 #### Kafka
 - **Port**: 9092
-- **Propósito**: Broker de mensagens for vote events
+- **Purpose**: Message broker for vote events
 
-#### Stack de Observabilidade
-| Service | Port | Propósito |
+#### Observability Stack
+| Service | Port | Purpose |
 |---------|------|---------|
 | Prometheus | 9090 | Metrics collection |
 | Grafana | 3001 | Dashboards & visualization |
 | Node Exporter | 9100 | System metrics |
 | Kafka Exporter | 9308 | Kafka metrics |
 
-#### Documentação
-| Service | Port | Propósito |
+#### Documentation
+| Service | Port | Purpose |
 |---------|------|---------|
 | Swagger UI | 3003 | API documentation |
 
-### Fluxo de Dados
+### Data Flow
 
 ```mermaid
 sequenceDiagram
@@ -81,7 +81,7 @@ sequenceDiagram
     participant Frontend
     participant API
     participant Kafka
-    participant Projetor
+    participant Projector
 
     User->>Frontend: Start
     Frontend->>API: GET /votings/{id}
@@ -97,9 +97,9 @@ sequenceDiagram
     API->>Frontend: Return 202 Accepted
     API-->>Kafka: Produce vote event
     API->>API: Update vote status state
-    Kafka-->>Projetor: Consume vote event
-    Projetor-->>Projetor: Update projections
-    Projetor-->>Kafka: Send projections
+    Kafka-->>Projector: Consume vote event
+    Projector-->>Projector: Update projections
+    Projector-->>Kafka: Send projections
 
     Kafka-->>API: Update projectios
     API-->>API: Update projectios state
@@ -111,10 +111,10 @@ sequenceDiagram
 ```
 
 
-### Segurança e proteção anti-bot
+### Security and anti-bot protection
 
-#### 1. Limitação de taxa at edge layer by IP.
-Limitação de taxa enforced at the API gateway or edge layer restricts how many requests an IP can make within a configurable time window. Uses algorithms like token bucket or sliding window to allow legitimate traffic while blocking abuse patterns. When a client exceeds the threshold, subsequent requests return 429 (Too Many Requests) with a Retry-After header. Configurable per-endpoint and per-voting to prevent targeted attacks on specific votings.
+#### 1. Rate limiting at edge layer by IP.
+Rate limiting enforced at the API gateway or edge layer restricts how many requests an IP can make within a configurable time window. Uses algorithms like token bucket or sliding window to allow legitimate traffic while blocking abuse patterns. When a client exceeds the threshold, subsequent requests return 429 (Too Many Requests) with a Retry-After header. Configurable per-endpoint and per-voting to prevent targeted attacks on specific votings.
 
 #### 2. Honeypot form mechanism to detect simple bots, blocks votes and creating custom policy to block future attacks.
 Hidden form fields (CSS-hidden or programmatically-injected) are included in the vote form but never filled by human users. Bots typically auto-fill all visible fields. When a honeypot field contains a value, the submission is silently rejected or flagged. Detected bot IPs are automatically added to a blocklist that enforces custom policies (ranging from temporary rate limits to permanent IP bans) applied retroactively and prospectively.
@@ -122,8 +122,8 @@ Hidden form fields (CSS-hidden or programmatically-injected) are included in the
 #### 3. Slider submission, to registry movements and detect suspicious non-human movement patterns.
 Instead of a simple button click, users must drag a slider from start to end position to submit their vote. The frontend captures mouse/touch movement data during the drag: velocity, acceleration, pauses, jitter, and path curvature. This behavioral biometric is analyzed to generate a human-score. Suspicious patterns (e.g., linear movement, constant velocity, no micro-corrections) trigger additional challenges or automatic flagging.
 
-#### 4. PoW (Proof of Work) anti-abuse mechanism: force each submissão de votos to realize memory and CPU bound operation, exponentially increasing the cost of mass attacks.
-Each submissão de votos requires solving a cryptographic puzzle before acceptance. The server issues a challenge (nonce) that the client must hash with a difficulty parameter. Supported algorithms include:
+#### 4. PoW (Proof of Work) anti-abuse mechanism: force each vote submission to realize memory and CPU bound operation, exponentially increasing the cost of mass attacks.
+Each vote submission requires solving a cryptographic puzzle before acceptance. The server issues a challenge (nonce) that the client must hash with a difficulty parameter. Supported algorithms include:
 - Argon2: Memory-hard function resistant to GPU/ASIC acceleration
 - Equihash: Wallet-style proof-of-work requiring significant memory
 - Hashcash: Classic CPU-bound stamp (simpler, lower protection)
@@ -170,7 +170,7 @@ Then open:
 - Prometheus: `http://localhost:9090`
 - Kafka UI: `http://localhost:8085`
 
-## Início Rápido
+## Quick Start
 
 ### Starting the Stack
 
@@ -180,7 +180,7 @@ Then open:
 | `make prod` | Start the stack using production configuration (`configs/prod.env`) |
 | `make benchmark` | Start the stack using benchmark configuration (`configs/benchmark.env`) |
 
-### Configuração
+### Configuration
 
 | Command | Description |
 |---------|-------------|
@@ -189,7 +189,7 @@ Then open:
 | `make config-benchmark` | Validate and select benchmark configuration |
 | `make print-env` | Display the currently loaded environment file contents |
 
-### Controle da Stack
+### Controlling the Stack
 
 | Command | Description |
 |---------|-------------|
@@ -210,7 +210,7 @@ Then open:
 | `make logs-frontend` | Tail frontend service logs |
 | `make logs-grafana` | Tail Grafana logs |
 
-### Verificação e Testes
+### Verification & Testing
 
 | Command | Description |
 |---------|-------------|
@@ -223,14 +223,14 @@ Then open:
 | `make test-integration-full` | Run all integration tests including restart scenarios |
 | `make test-ui` | Run Playwright UI tests |
 
-### Observabilidade
+### Observability
 
 | Command | Description |
 |---------|-------------|
 | `make health` | Check health endpoints of key services |
 | `make urls` | Print all service URLs for easy access |
 
-### Testes de Carga
+### Load Testing
 
 | Command | Description |
 |---------|-------------|
@@ -242,7 +242,7 @@ Then open:
 | `make load-consistency` | Test vote consistency under load |
 | `make load-consistency-topic` | Consistency test with Kafka topic verification |
 
-### Limpeza
+### Cleanup
 
 | Command | Description |
 |---------|-------------|
@@ -251,18 +251,18 @@ Then open:
 | `make clean-go-cache` | Remove Go module and build cache |
 | `make reset-runtime` | Full reset: down + clean containers + clean images |
 
-## Estrutura de Pastas
+## Folders structure
 
 - `apps/api/`: HTTP API, vote ingestion, anti-abuse enforcement, snapshot consumption
 - `apps/projector/`: event consumer that builds and republishes materialized result snapshots
 - `apps/frontend/`: static frontend plus edge proxy behavior
 - `contracts/`: HTTP, event, and topic contracts
-- `deploy/`: Compose runtime plus observabilidade assets
+- `deploy/`: Compose runtime plus observability assets
 - `configs/`: INI profiles for local and production-oriented configuration
 - `scripts/`: smoke, runtime, validation, and load-test helpers
 - `tests/load/`: k6 scenarios and load-test docs
 
-## Configuração Model
+## Configuration Model
 
 Profiles live in:
 
@@ -272,7 +272,7 @@ Profiles live in:
 
 You can override individual values after loading the env file.
 
-## Modelo de Exposição da API
+## API Exposure Model
 
 The intended deployment model is frontend edge to internal API.
 
@@ -285,7 +285,7 @@ Local Compose still exposes `:8080` and `:8082` on `127.0.0.1` for developer con
 
 When configured, normal API routes require the configured edge-auth header.
 
-## Visão Geral de CI
+## CI Overview
 
 GitHub Actions CI is defined in `.github/workflows/ci.yml`.
 
