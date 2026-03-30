@@ -34,6 +34,12 @@ A métrica de **ciclos de votação/s** é mais representativa do throughput rea
 
 A arquitetura orientada a eventos com Kafka demonstra escalabilidade horizontal consistente: o throughput dobrou proporcionalmente com o aumento de VUs (de 200 para 900), mantendo a latência abaixo de 100 ms no P95.
 
+## Contratos
+
+Para as API's Rest o contrato está descrito em formato [TypeSpec](https://typespec.io/playground/) em [contracts/http/typespec/main.tsp](contracts/http/typespec/main.tsp) (em breve teremos o OpenAPI).  
+
+Para contratos de eventos no Kafka os contratos estão em [contracts/events/asyncapi/voting-events.yaml](contracts/events/asyncapi/voting-events.yaml) e [contracts/events/schemas/jsonschema](contracts/events/schemas/jsonschema)
+
 ## Arquitetura
 
 Este projeto implementa uma plataforma de votação orientada a eventos com base nos padrões CQRS (Command Query Responsibility Segregation) e Event Sourcing. As operações de escrita (submissão de votos) são processadas pela API e persistidas como eventos imutáveis em tópicos do Kafka, estabelecendo um event log confiável com Log Compaction para armazenamento eficiente. O serviço projector consome esses eventos e constrói Materialized Views que agregam a contagem de votos por candidato, fornecendo caminhos de leitura otimizados para o endpoint de resultados. Essa separação entre os lados de comando e consulta permite que o sistema suporte alta taxa de escrita, ao mesmo tempo em que mantém modelos de leitura consistentes e eventualmente convergentes.
