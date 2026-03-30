@@ -1,0 +1,280 @@
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches:
+      - '**'
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+  packages: write
+
+env:
+  REGISTRY: ghcr.io
+
+jobs:
+  validate-release-tag:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Skip semantic validation for non-tag refs
+        if: ${{ !startsWith(github.ref, 'refs/tags/') }}
+        run: echo "non-tag ref; semantic release validation skipped"
+
+      - name: Validate semantic version tag
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          case "${GITHUB_REF_NAME}" in
+            v[0-9]*.[0-9]*.[0-9]*)
+              echo "valid semantic tag: ${GITHUB_REF_NAME}"
+              ;;
+            *)
+              echo "expected semantic tag in the form vMAJOR.MINOR.PATCH, got ${GITHUB_REF_NAME}" >&2
+              exit 1
+              ;;
+          esac
+
+  validate-contracts:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install contract validation dependencies
+        run: python -m pip install --upgrade pip pyyaml
+
+      - name: Validate contract files
+        run: |
+          python <<'PY'
+          import json
+          from pathlib import Path
+          import yaml
+
+          root = Path('.').resolve()
+
+          json_files = sorted((root / 'contracts').glob('**/*.json'))
+          yaml_files = sorted((root / 'contracts').glob('**/*.yaml'))
+          tsp_files = sorted((root / 'contracts').glob('**/*.tsp'))
+
+          if not json_files or not yaml_files or not tsp_files:
+              raise SystemExit('expected json, yaml, and tsp contract files under contracts/')
+
+          for path in json_files:
+              with path.open('r', encoding='utf-8') as fh:
+                  json.load(fh)
+
+          parsed_yaml = {}
+          for path in yaml_files:
+              with path.open('r', encoding='utf-8') as fh:
+                  parsed_yaml[path] = yaml.safe_load(fh)
+
+          topics = parsed_yaml[root / 'contracts' / 'topics' / 'topics.yaml']['topics']
+          topic_names = {item['name'] for item in topics}
+
+          asyncapi = parsed_yaml[root / 'contracts' / 'events' / 'asyncapi' / 'voting-events.yaml']
+          channel_addresses = {
+              entry['address']
+              for entry in asyncapi.get('channels', {}).values()
+          }
+
+          missing = sorted(channel_addresses - topic_names)
+          if missing:
+              raise SystemExit(f'asyncapi channels missing from topics.yaml: {missing}')
+
+          print(f'validated {len(json_files)} JSON files, {len(yaml_files)} YAML files, and {len(tsp_files)} TypeSpec files')
+          PY
+
+  security-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Run Trivy vulnerability scanner (filesystem)
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+
+      - name: Upload Trivy results to GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+      - name: Run Trivy vulnerability scanner (Dockerfile)
+        if: github.event_name == 'push'
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'config'
+          scan-ref: 'apps/api/Dockerfile'
+          format: 'sarif'
+          output: 'trivy-docker-api.sarif'
+
+      - name: Upload Trivy Dockerfile results
+        if: github.event_name == 'push'
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: 'trivy-docker-api.sarif'
+
+  test-go:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service:
+          - api
+          - projector
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: apps/${{ matrix.service }}/go.mod
+          cache-dependency-path: apps/${{ matrix.service }}/go.sum
+
+      - name: Run Go tests
+        working-directory: apps/${{ matrix.service }}
+        run: |
+          go mod verify
+          go test ./...
+
+  smoke-compose:
+    runs-on: ubuntu-latest
+    needs:
+      - validate-contracts
+      - test-go
+      - security-scan
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Verify Docker Compose availability
+        run: docker compose version
+
+      - name: Build and start stack
+        run: docker compose --env-file configs/dev.env -f deploy/compose/docker-compose.yml up -d --build
+
+      - name: Wait for stack health
+        run: |
+          for url in \
+            http://localhost:8080/healthz \
+            http://localhost:8081/healthz \
+            http://localhost:3001/api/health \
+            http://localhost:9090/-/healthy; do
+            echo "waiting for $url"
+            for _ in $(seq 1 60); do
+              if curl -fsS "$url" >/dev/null; then
+                break
+              fi
+              sleep 2
+            done
+            curl -fsS "$url" >/dev/null
+          done
+
+      - name: Run core smoke tests
+        run: |
+          bash scripts/smoke-e2e.sh
+          bash scripts/smoke-observability-targets.sh
+
+      - name: Dump compose logs on failure
+        if: failure()
+        run: docker compose --env-file configs/dev.env -f deploy/compose/docker-compose.yml logs --no-color
+
+      - name: Stop stack
+        if: always()
+        run: docker compose --env-file configs/dev.env -f deploy/compose/docker-compose.yml down -v
+
+  build-images:
+    runs-on: ubuntu-latest
+    needs:
+      - validate-release-tag
+      - validate-contracts
+      - test-go
+      - smoke-compose
+    strategy:
+      matrix:
+        include:
+          - name: api
+            context: ./apps/api
+          - name: projector
+            context: ./apps/projector
+          - name: frontend
+            context: ./apps/frontend
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        if: github.event_name == 'push' && (github.ref_name == 'main' || startsWith(github.ref, 'refs/tags/'))
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ github.repository_owner }}/voting-platform-${{ matrix.name }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=sha
+            type=ref,event=tag
+
+      - name: Build and optionally push image
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.context }}
+          push: ${{ github.event_name == 'push' && (github.ref_name == 'main' || startsWith(github.ref, 'refs/tags/')) }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  publish-release-assets:
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    needs:
+      - validate-release-tag
+      - validate-contracts
+      - test-go
+      - build-images
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Package release assets
+        run: |
+          mkdir -p release-assets
+          tar -czf release-assets/contracts-${GITHUB_REF_NAME}.tar.gz contracts
+          tar -czf release-assets/docs-${GITHUB_REF_NAME}.tar.gz docs README.md deploy/compose/docker-compose.yml
+          sha256sum release-assets/* > release-assets/checksums-${GITHUB_REF_NAME}.txt
+
+      - name: Publish GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: |
+            release-assets/contracts-${{ github.ref_name }}.tar.gz
+            release-assets/docs-${{ github.ref_name }}.tar.gz
+            release-assets/checksums-${{ github.ref_name }}.txt

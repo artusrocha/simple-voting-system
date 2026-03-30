@@ -1,0 +1,106 @@
+name: load-tests
+
+on:
+  workflow_dispatch:
+    inputs:
+      test_type:
+        description: 'Type of load test to run'
+        required: true
+        default: 'smoke'
+        type: choice
+        options:
+          - smoke
+          - sustained
+          - spike
+          - stress
+      api_base_url:
+        description: 'API Base URL'
+        required: false
+        default: 'http://localhost:8080'
+      duration:
+        description: 'Test duration (e.g., 5m, 10m)'
+        required: false
+        default: '5m'
+      vus:
+        description: 'Virtual users'
+        required: false
+        default: '10'
+
+jobs:
+  load-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Compose
+        run: docker compose version
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Set up K6
+        uses: grafana/k6-action@main
+        with:
+          k6version: latest
+
+      - name: Build and start stack
+        run: docker compose --env-file configs/dev.env -f deploy/compose/docker-compose.yml up -d --build
+
+      - name: Wait for API to be ready
+        run: |
+          for _ in $(seq 1 30); do
+            if curl -fsS http://localhost:8080/healthz >/dev/null; then
+              echo "API is ready"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "API failed to start"
+          exit 1
+
+      - name: Run load test (smoke)
+        if: github.event.inputs.test_type == 'smoke'
+        run: |
+          k6 run --duration ${{ github.event.inputs.duration || '1m' }} \
+            --vus ${{ github.event.inputs.vus || '5' }} \
+            tests/load/smoke.js
+
+      - name: Run load test (sustained)
+        if: github.event.inputs.test_type == 'sustained'
+        run: |
+          k6 run --duration ${{ github.event.inputs.duration || '5m' }} \
+            --vus ${{ github.event.inputs.vus || '20' }} \
+            tests/load/sustained.js
+
+      - name: Run load test (spike)
+        if: github.event.inputs.test_type == 'spike'
+        run: |
+          k6 run --duration ${{ github.event.inputs.duration || '3m' }} \
+            --vus ${{ github.event.inputs.vus || '50' }} \
+            tests/load/spike.js
+
+      - name: Run load test (stress)
+        if: github.event.inputs.test_type == 'stress'
+        run: |
+          k6 run --duration ${{ github.event.inputs.duration || '10m' }} \
+            --vus ${{ github.event.inputs.vus || '100' }} \
+            tests/load/stress.js
+
+      - name: Export results
+        if: always()
+        run: |
+          docker compose --env-file configs/dev.env -f deploy/compose/docker-compose.yml logs > load-test-logs.txt
+
+      - name: Upload logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: load-test-logs
+          path: load-test-logs.txt
+
+      - name: Stop stack
+        if: always()
+        run: docker compose --env-file configs/dev.env -f deploy/compose/docker-compose.yml down -v
