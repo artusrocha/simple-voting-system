@@ -24,7 +24,7 @@
 | **Total de Ciclos de Votação** | 3,24M |
 | **Dados Transferidos** | ~3,8 GB |
 
-O teste de estresse com **900 Usuários Virtuais** alcançou **20.591 req/s** (10.295 ciclos de votação/s), com **0% de falhas** e latência P95 de **78,55 ms**.
+O teste de estresse com **900 Usuários Virtuais** alcançou **16.591 req/s** (7.295 ciclos de votação/s), com **0% de falhas** e latência P95 de **78,55 ms**.
 
 **Por que existem duas métricas de throughput?** Cada iteração do teste executa múltiplas requisições HTTP.
 - **req/s** = total de requisições HTTP por segundo (16.591)
@@ -159,6 +159,25 @@ As descobertas geram novas regras de política que:
 - notificam administradores sobre campanhas detectadas
 
 ## Início Rápido
+
+### O que você precisa ter instalado no seu host?
+
+##### Docker ou Podman
+Todas as operações no Makefile utilizam containers.  
+É possivel buildar e executar mesmo que não tenha Go, Node outros linguagens instaladas.  
+O Makefile irá detectar automáticamente quandl você possui(docker ou podman), mas você pode sobrescever usando RUNTIME=docker ou RUNTIME=podman antes dos comandos. Ex: RUNTIME=docker make up
+
+#### Opcional: Make
+Os comandos estão organizados no Makefile.  
+É possível usar diretamente sem Make, reproduzindo manualmente os comandos descritos no Makefile, Mas o Make trava muito conveniencia no uso.  
+
+### Uso básico
+
+```bash
+make up
+make urls
+```
+Acesse as urls indicados.
 
 ### Iniciando a stack
 

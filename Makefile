@@ -1,7 +1,25 @@
 SHELL := /usr/bin/env bash
 
-RUNTIME ?= podman
-COMPOSE_CMD ?= podman-compose
+# ===========================================
+# Auto-detecção de container engine
+# ===========================================
+
+DETECTED_RUNTIME := $(shell if command -v docker >/dev/null 2>&1; then echo "docker"; \
+                     elif command -v podman >/dev/null 2>&1; then echo "podman"; \
+                     else echo "none"; endif)
+
+ifeq ($(origin RUNTIME),undefined)
+  RUNTIME := $(DETECTED_RUNTIME)
+endif
+
+ifeq ($(origin COMPOSE_CMD),undefined)
+  COMPOSE_CMD := $(if $(filter docker,$(RUNTIME)),docker compose,podman-compose)
+endif
+
+ifeq ($(RUNTIME),none)
+  $(error Nenhum container engine encontrado. Instale docker ou podman.)
+endif
+
 CONFIG ?= configs/dev.env
 ENV_FILE ?= $(CONFIG)
 COMPOSE_FILE ?= deploy/compose/docker-compose.yml
@@ -151,11 +169,11 @@ clean-generated: ## Remove generated env files
 	@printf '[make] removed %s\n' "$(ENV_DIR)"
 
 clean-app-images: ## Remove locally built application images
-	@podman images --format '{{.Repository}}:{{.Tag}}' | grep -E '^localhost/voting-platform-(api|projector|frontend):latest$$' | xargs -r podman rmi -f
+	@$(RUNTIME) images --format '{{.Repository}}:{{.Tag}}' | grep -E '^localhost/voting-platform-(api|projector|frontend):latest$$' | xargs -r $(RUNTIME) rmi -f
 
 clean-runtime: ## Remove platform containers from old and current prefixes
-	@names=$$(podman ps -a --format '{{.Names}}' | grep -E '^(laager-|voting-platform-)' || true); \
-	if [[ -n "$$names" ]]; then podman rm -f $$names; fi; \
+	@names=$$($(RUNTIME) ps -a --format '{{.Names}}' | grep -E '^(laager-|voting-platform-)' || true); \
+	if [[ -n "$$names" ]]; then $(RUNTIME) rm -f $$names; fi; \
 	printf '[make] removed platform containers if present\n'
 
 clean-go-cache: ## Remove Go module and build cache
