@@ -63,7 +63,7 @@ This project implements an event-driven voting platform based on CQRS (Command Q
 #### Observability Stack
 | Service | Port | Purpose |
 |---------|------|---------|
-| Prometheus | 9090 | Metrics collection |
+| Prometheus | 19090 | Metrics collection |
 | Grafana | 3001 | Dashboards & visualization |
 | Node Exporter | 9100 | System metrics |
 | Kafka Exporter | 9308 | Kafka metrics |

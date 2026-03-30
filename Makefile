@@ -35,13 +35,12 @@ GO_TEST_FLAGS ?=
 	fmt test verify contracts-check \
 	build build-no-cache up down restart rebuild ps logs logs-api logs-projector logs-frontend logs-grafana \
 	status health urls \
-	smoke \
 	load-create-voting load-smoke load-sustained load-spike load-stress load-consistency load-consistency-topic \
 	load-smoke-multi-api load-stress-multi-api \
 	performance-index \
-	clean-generated clean-app-images clean-runtime clean-go-cache reset-runtime \
+	clean-app-images clean-runtime clean-go-cache reset-runtime \
 	k8s-validate k8s-apply k8s-delete \
-	test-integration test-ui test-all test-integration-full \
+	test-integration test-ui test-integration-full \
 	dev prod benchmark
 
 BENCHMARK_MULTI_API_BASE_URL ?= http://localhost:3002
@@ -119,7 +118,7 @@ health: ## Check key service health endpoints
 	@curl -fsS http://localhost:8080/healthz && printf '\n---\n'
 	@curl -fsS http://localhost:8081/healthz && printf '\n---\n'
 	@curl -fsS http://localhost:3001/api/health && printf '\n---\n'
-	@curl -fsS http://localhost:9090/-/healthy && printf '\n'
+	@curl -fsS http://localhost:19090/-/healthy && printf '\n'
 
 urls: ## Print common local URLs
 	@printf 'vote UI:      http://localhost:3000/vote.html\n'
@@ -129,7 +128,7 @@ urls: ## Print common local URLs
 	@printf 'benchmark lb: http://localhost:3002\n'
 	@printf 'projector:    http://localhost:8081\n'
 	@printf 'grafana:      http://localhost:3001\n'
-	@printf 'prometheus:   http://localhost:9090\n'
+	@printf 'prometheus:   http://localhost:19090\n'
 	@printf 'kafka ui:     http://localhost:8085\n'
 
 load-create-voting: ## Create a load-test voting
@@ -162,10 +161,6 @@ load-consistency-topic: ## Run consistency + topic verification load test
 performance-index: ## Render latest performance index from k6 summaries
 	@python3 scripts/render-performance-index.py
 
-clean-generated: ## Remove generated env files
-	@rm -rf "$(ENV_DIR)"
-	@printf '[make] removed %s\n' "$(ENV_DIR)"
-
 clean-app-images: ## Remove locally built application images
 	@$(RUNTIME) images --format '{{.Repository}}:{{.Tag}}' | grep -E '^localhost/voting-platform-(api|projector|frontend):latest$$' | xargs -r $(RUNTIME) rmi -f
 
@@ -177,7 +172,7 @@ clean-runtime: ## Remove platform containers from old and current prefixes
 clean-go-cache: ## Remove Go module and build cache
 	@rm -rf "$(GO_CACHE_DIR)" && printf '[make] removed Go cache at %s\n' "$(GO_CACHE_DIR)"
 
-reset-runtime: down clean-runtime clean-app-images clean-generated ## Destroy local runtime artifacts
+reset-runtime: down clean-runtime clean-app-images ## Destroy local runtime artifacts
 
 dev: CONFIG=configs/dev.env
 dev: config up ## Use dev env and start stack

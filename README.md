@@ -69,7 +69,7 @@ Este projeto implementa uma plataforma de votação orientada a eventos com base
 #### Stack de Observabilidade
 | Serviço | Porta | Propósito |
 |---------|------|---------|
-| Prometheus | 9090 | Coleta de métricas |
+| Prometheus | 19090 | Coleta de métricas |
 | Grafana | 3001 | Dashboards e visualização |
 | Node Exporter | 9100 | Métricas do sistema |
 | Kafka Exporter | 9308 | Métricas do Kafka |

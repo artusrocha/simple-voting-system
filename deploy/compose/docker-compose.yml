@@ -280,7 +280,7 @@ services:
       projector:
         condition: service_started
     ports:
-      - "9090:9090"
+      - "19090:9090"
     volumes:
       - ../observability/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - ../observability/prometheus/rules:/etc/prometheus/rules:ro

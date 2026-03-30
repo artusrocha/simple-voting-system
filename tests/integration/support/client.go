@@ -113,7 +113,7 @@ func GetEdgeURL() string {
 }
 
 func GetPrometheusURL() string {
-	return GetEnv("PROMETHEUS_URL", "http://localhost:9090")
+	return GetEnv("PROMETHEUS_URL", "http://localhost:19090")
 }
 
 func GetProjectorHealthURL() string {
