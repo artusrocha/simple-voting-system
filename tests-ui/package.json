@@ -1,0 +1,11 @@
+{
+  "name": "voting-platform-ui-tests",
+  "version": "1.0.0",
+  "description": "UI tests for voting platform",
+  "scripts": {
+    "test": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.42.0"
+  }
+}
