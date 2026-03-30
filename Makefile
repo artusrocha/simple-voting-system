@@ -88,7 +88,8 @@ up: config ## Start stack with current CONFIG
 	@$(COMPOSE_CMD) --env-file "$(ENV_FILE)" -f "$(COMPOSE_FILE)" up -d
 
 down: config ## Stop stack with current CONFIG
-	@$(COMPOSE_CMD) --env-file "$(ENV_FILE)" -f "$(COMPOSE_FILE)" down || true
+	@$(COMPOSE_CMD) --env-file "$(ENV_FILE)" -f "$(COMPOSE_FILE)" down --remove-orphans || true
+	@$(COMPOSE_CMD) --env-file "$(ENV_FILE)" -f "$(COMPOSE_FILE)" rm -f || true
 
 restart: down up ## Restart stack
 
