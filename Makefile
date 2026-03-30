@@ -4,9 +4,7 @@ SHELL := /usr/bin/env bash
 # Auto-detecção de container engine
 # ===========================================
 
-DETECTED_RUNTIME := $(shell if command -v docker >/dev/null 2>&1; then echo "docker"; \
-                     elif command -v podman >/dev/null 2>&1; then echo "podman"; \
-                     else echo "none"; endif)
+DETECTED_RUNTIME := $(shell (command -v docker >/dev/null 2>&1 && echo "docker") || (command -v podman >/dev/null 2>&1 && echo "podman") || echo "none")
 
 ifeq ($(origin RUNTIME),undefined)
   RUNTIME := $(DETECTED_RUNTIME)
