@@ -102,7 +102,7 @@ sequenceDiagram
     Projector-->>Kafka: Send projections
 
     Kafka-->>API: Update projectios
-    API-->>: Update projectios state
+    API-->>API: Update projectios state
     Frontend->>API: GET /votings/{id}/status
     API-->>Frontend: Vote proccessed 200 OK
     Frontend->>API: GET /votings/{id}/results
@@ -117,7 +117,7 @@ sequenceDiagram
 Rate limiting enforced at the API gateway or edge layer restricts how many requests an IP can make within a configurable time window. Uses algorithms like token bucket or sliding window to allow legitimate traffic while blocking abuse patterns. When a client exceeds the threshold, subsequent requests return 429 (Too Many Requests) with a Retry-After header. Configurable per-endpoint and per-voting to prevent targeted attacks on specific votings.
 
 #### 2. Honeypot form mechanism to detect simple bots, blocks votes and creating custom policy to block future attacks.
-Hidden form fields (CSS-hidden or programmatically-injected) are included in the vote form but never filled by human users. Bots typically auto-fill all visible fields. When a honeypot field contains a value, the submission is silently rejected or flagged. Detected bot IPs are automatically added to a blocklist that enforces custom policies—ranging from temporary rate limits to permanent IP bans—applied retroactively and prospectively.
+Hidden form fields (CSS-hidden or programmatically-injected) are included in the vote form but never filled by human users. Bots typically auto-fill all visible fields. When a honeypot field contains a value, the submission is silently rejected or flagged. Detected bot IPs are automatically added to a blocklist that enforces custom policies (ranging from temporary rate limits to permanent IP bans) applied retroactively and prospectively.
 
 #### 3. Slider submission, to registry movements and detect suspicious non-human movement patterns.
 Instead of a simple button click, users must drag a slider from start to end position to submit their vote. The frontend captures mouse/touch movement data during the drag: velocity, acceleration, pauses, jitter, and path curvature. This behavioral biometric is analyzed to generate a human-score. Suspicious patterns (e.g., linear movement, constant velocity, no micro-corrections) trigger additional challenges or automatic flagging.
@@ -128,7 +128,7 @@ Each vote submission requires solving a cryptographic puzzle before acceptance. 
 - Equihash: Wallet-style proof-of-work requiring significant memory
 - Hashcash: Classic CPU-bound stamp (simpler, lower protection)
 - Cuckoo Cycle: Graph-theoretic memory-hard proof
-Difficulty can be dynamically adjusted based on detected attack patterns—normal traffic gets minimal PoW, suspicious IPs face exponentially harder puzzles. This makes mass-voting computationally and economically prohibitive while adding only ~100-500ms latency for legitimate users.
+Difficulty can be dynamically adjusted based on detected attack patterns, normal traffic gets minimal PoW, suspicious IPs face exponentially harder puzzles. This makes mass-voting computationally and economically prohibitive while adding only ~100-500ms latency for legitimate users.
 
 #### 5. Custom policies to filter suspicious votes.
 A rule-engine evaluates votes against configurable policy conditions:
