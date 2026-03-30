@@ -8,9 +8,9 @@ import (
 )
 
 type Config struct {
-	HTTPAddr string
-	Brokers  []string
-	LogLevel string
+	HTTPAddr              string
+	Brokers               []string
+	LogLevel              string
 	SnapshotFlushInterval time.Duration
 
 	TopicVotesRaw           string

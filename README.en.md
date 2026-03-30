@@ -151,25 +151,6 @@ Findings generate new policy rules that:
 - Retroactively flag or invalidate past votes matching attack signatures
 - Notify administrators of detected campaigns
 
-## Fastest Review Path
-
-If you only have a few minutes, run:
-
-```bash
-make dev
-make verify
-make smoke
-```
-
-Then open:
-
-- vote UI: `http://localhost:3000/vote.html`
-- admin UI: `http://localhost:3000/admin.html`
-- direct API: `http://localhost:8080`
-- Grafana: `http://localhost:3001`
-- Prometheus: `http://localhost:9090`
-- Kafka UI: `http://localhost:8085`
-
 ## Quick Start
 
 ### Starting the Stack
