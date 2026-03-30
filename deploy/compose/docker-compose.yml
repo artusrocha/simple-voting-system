@@ -1,0 +1,336 @@
+services:
+  kafka:
+    image: confluentinc/cp-kafka:7.6.1
+    container_name: ${CONTAINER_NAME_PREFIX:-voting-platform}-kafka
+    hostname: kafka
+    restart: unless-stopped
+    ports:
+      - "9092:9092"
+      - "9101:9101"
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
+      KAFKA_JMX_PORT: 9101
+      KAFKA_JMX_HOSTNAME: localhost
+      KAFKA_SOCKET_TIMEOUT_MS: 5000
+      KAFKA_REQUEST_TIMEOUT_MS: 3000
+      CLUSTER_ID: MkU3OEVBNTcwNTJENDM2Qk
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "kafka-topics --bootstrap-server localhost:9092 --list >/dev/null 2>&1",
+        ]
+      interval: 10s
+      timeout: 10s
+      retries: 12
+
+  kafka-init:
+    image: confluentinc/cp-kafka:7.6.1
+    container_name: ${CONTAINER_NAME_PREFIX:-voting-platform}-kafka-init
+    depends_on:
+      kafka:
+        condition: service_healthy
+    volumes:
+      - ../../scripts/init-kafka-topics.sh:/init-kafka-topics.sh:ro
+      - ../../contracts/topics/topics.yaml:/contracts/topics/topics.yaml:ro
+    entrypoint: ["bash", "/init-kafka-topics.sh"]
+    restart: "no"
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:v0.7.2
+    container_name: ${CONTAINER_NAME_PREFIX:-voting-platform}-kafka-ui
+    restart: unless-stopped
+    depends_on:
+      kafka:
+        condition: service_healthy
+    ports:
+      - "8085:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
+      KAFKA_CLUSTERS_0_READONLY: "false"
+
+  valkey:
+    image: valkey/valkey:8.0-alpine
+    container_name: ${CONTAINER_NAME_PREFIX:-voting-platform}-valkey
+    restart: unless-stopped
+    command: ["valkey-server", "--save", "", "--appendonly", "no"]
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "valkey-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  api:
+    image: localhost/voting-platform-api:latest
+    build:
+      context: ../../apps/api
+      dockerfile: Dockerfile
+    container_name: ${CONTAINER_NAME_PREFIX:-voting-platform}-api
+    restart: unless-stopped
+    depends_on:
+      kafka-init:
+        condition: service_completed_successfully
+      valkey:
+        condition: service_healthy
+    ports:
+      - "${API_BIND_IP:-127.0.0.1}:${API_PORT:-8080}:8080"
+    environment:
+      APP_ENV: ${API_APP_ENV:-local}
+      HTTP_ADDR: ${API_HTTP_ADDR:-:8080}
+      KAFKA_BROKERS: ${API_KAFKA_BROKERS:-kafka:9092}
+      KAFKA_TOPIC_VOTES_RAW: ${API_KAFKA_TOPIC_VOTES_RAW:-votes.raw}
+      KAFKA_TOPIC_VOTINGS_CATALOG: ${API_KAFKA_TOPIC_VOTINGS_CATALOG:-votings.catalog}
+      KAFKA_TOPIC_POLICY_CONTROL: ${API_KAFKA_TOPIC_POLICY_CONTROL:-voting-policy-control}
+      KAFKA_TOPIC_RESULTS_SNAPSHOT: ${API_KAFKA_TOPIC_RESULTS_SNAPSHOT:-voting-results-snapshot}
+      KAFKA_TOPIC_VOTING_CATALOG_LATEST: ${API_KAFKA_TOPIC_VOTING_CATALOG_LATEST:-voting-catalog-latest}
+      KAFKA_TOPIC_VOTING_POLICY_LATEST: ${API_KAFKA_TOPIC_VOTING_POLICY_LATEST:-voting-policy-latest}
+      LOG_LEVEL: ${API_LOG_LEVEL:-info}
+      FEATURE_POW_VOTE: ${API_FEATURE_POW_VOTE:-true}
+      POW_SECRET: ${API_POW_SECRET:-local-dev-pow-secret}
+      POW_ALGORITHM: ${API_POW_ALGORITHM:-sha256}
+      POW_TTL_SECONDS: ${API_POW_TTL_SECONDS:-60}
+      POW_BASE_DIFFICULTY_BITS: ${API_POW_BASE_DIFFICULTY_BITS:-18}
+      POW_MAX_DIFFICULTY_BITS: ${API_POW_MAX_DIFFICULTY_BITS:-24}
+      POW_ADAPTIVE_WINDOW_SECONDS: ${API_POW_ADAPTIVE_WINDOW_SECONDS:-60}
+      POW_ARGON2_MEMORY_KIB: ${API_POW_ARGON2_MEMORY_KIB:-8192}
+      POW_ARGON2_TIME_COST: ${API_POW_ARGON2_TIME_COST:-1}
+      POW_ARGON2_PARALLELISM: ${API_POW_ARGON2_PARALLELISM:-1}
+      POW_ARGON2_HASH_LENGTH: ${API_POW_ARGON2_HASH_LENGTH:-32}
+      POW_TARGET_MS: ${API_POW_TARGET_MS:-3000}
+      POW_SESSION_COOKIE_NAME: ${API_POW_SESSION_COOKIE_NAME:-pow_session}
+      ANTIABUSE_STORE: ${API_ANTIABUSE_STORE:-valkey}
+      VALKEY_ADDR: ${API_VALKEY_ADDR:-valkey:6379}
+      VALKEY_PASSWORD: ${API_VALKEY_PASSWORD:-}
+      VALKEY_DB: ${API_VALKEY_DB:-0}
+      VALKEY_KEY_PREFIX: ${API_VALKEY_KEY_PREFIX:-voting-platform}
+      EDGE_PROXY_SHARED_SECRET: ${API_EDGE_PROXY_SHARED_SECRET:-}
+      EDGE_PROXY_AUTH_HEADER: ${API_EDGE_PROXY_AUTH_HEADER:-X-App-Edge-Auth}
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  api-b:
+    image: localhost/voting-platform-api:latest
+    build:
+      context: ../../apps/api
+      dockerfile: Dockerfile
+    container_name: ${CONTAINER_NAME_PREFIX:-voting-platform}-api-b
+    restart: unless-stopped
+    depends_on:
+      kafka-init:
+        condition: service_completed_successfully
+      valkey:
+        condition: service_healthy
+    ports:
+      - "${API_B_BIND_IP:-127.0.0.1}:${API_B_PORT:-8082}:8080"
+    environment:
+      APP_ENV: ${API_B_APP_ENV:-local}
+      HTTP_ADDR: ${API_B_HTTP_ADDR:-:8080}
+      KAFKA_BROKERS: ${API_B_KAFKA_BROKERS:-kafka:9092}
+      KAFKA_TOPIC_VOTES_RAW: ${API_B_KAFKA_TOPIC_VOTES_RAW:-votes.raw}
+      KAFKA_TOPIC_VOTINGS_CATALOG: ${API_B_KAFKA_TOPIC_VOTINGS_CATALOG:-votings.catalog}
+      KAFKA_TOPIC_POLICY_CONTROL: ${API_B_KAFKA_TOPIC_POLICY_CONTROL:-voting-policy-control}
+      KAFKA_TOPIC_RESULTS_SNAPSHOT: ${API_B_KAFKA_TOPIC_RESULTS_SNAPSHOT:-voting-results-snapshot}
+      KAFKA_TOPIC_VOTING_CATALOG_LATEST: ${API_B_KAFKA_TOPIC_VOTING_CATALOG_LATEST:-voting-catalog-latest}
+      KAFKA_TOPIC_VOTING_POLICY_LATEST: ${API_B_KAFKA_TOPIC_VOTING_POLICY_LATEST:-voting-policy-latest}
+      LOG_LEVEL: ${API_B_LOG_LEVEL:-info}
+      FEATURE_POW_VOTE: ${API_B_FEATURE_POW_VOTE:-true}
+      POW_SECRET: ${API_B_POW_SECRET:-local-dev-pow-secret}
+      POW_ALGORITHM: ${API_B_POW_ALGORITHM:-sha256}
+      POW_TTL_SECONDS: ${API_B_POW_TTL_SECONDS:-60}
+      POW_BASE_DIFFICULTY_BITS: ${API_B_POW_BASE_DIFFICULTY_BITS:-18}
+      POW_MAX_DIFFICULTY_BITS: ${API_B_POW_MAX_DIFFICULTY_BITS:-24}
+      POW_ADAPTIVE_WINDOW_SECONDS: ${API_B_POW_ADAPTIVE_WINDOW_SECONDS:-60}
+      POW_ARGON2_MEMORY_KIB: ${API_B_POW_ARGON2_MEMORY_KIB:-8192}
+      POW_ARGON2_TIME_COST: ${API_B_POW_ARGON2_TIME_COST:-1}
+      POW_ARGON2_PARALLELISM: ${API_B_POW_ARGON2_PARALLELISM:-1}
+      POW_ARGON2_HASH_LENGTH: ${API_B_POW_ARGON2_HASH_LENGTH:-32}
+      POW_TARGET_MS: ${API_B_POW_TARGET_MS:-3000}
+      POW_SESSION_COOKIE_NAME: ${API_B_POW_SESSION_COOKIE_NAME:-pow_session}
+      ANTIABUSE_STORE: ${API_B_ANTIABUSE_STORE:-valkey}
+      VALKEY_ADDR: ${API_B_VALKEY_ADDR:-valkey:6379}
+      VALKEY_PASSWORD: ${API_B_VALKEY_PASSWORD:-}
+      VALKEY_DB: ${API_B_VALKEY_DB:-0}
+      VALKEY_KEY_PREFIX: ${API_B_VALKEY_KEY_PREFIX:-voting-platform}
+      EDGE_PROXY_SHARED_SECRET: ${API_B_EDGE_PROXY_SHARED_SECRET:-}
+      EDGE_PROXY_AUTH_HEADER: ${API_B_EDGE_PROXY_AUTH_HEADER:-X-App-Edge-Auth}
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  projector:
+    image: localhost/voting-platform-projector:latest
+    build:
+      context: ../../apps/projector
+      dockerfile: Dockerfile
+    container_name: ${CONTAINER_NAME_PREFIX:-voting-platform}-projector
+    restart: unless-stopped
+    depends_on:
+      kafka-init:
+        condition: service_completed_successfully
+    environment:
+      APP_ENV: ${PROJECTOR_APP_ENV:-local}
+      HTTP_ADDR: ${PROJECTOR_HTTP_ADDR:-:8081}
+      KAFKA_BROKERS: ${PROJECTOR_KAFKA_BROKERS:-kafka:9092}
+      KAFKA_TOPIC_VOTES_RAW: ${PROJECTOR_KAFKA_TOPIC_VOTES_RAW:-votes.raw}
+      KAFKA_TOPIC_VOTINGS_CATALOG: ${PROJECTOR_KAFKA_TOPIC_VOTINGS_CATALOG:-votings.catalog}
+      KAFKA_TOPIC_POLICY_CONTROL: ${PROJECTOR_KAFKA_TOPIC_POLICY_CONTROL:-voting-policy-control}
+      KAFKA_TOPIC_RESULTS_SNAPSHOT: ${PROJECTOR_KAFKA_TOPIC_RESULTS_SNAPSHOT:-voting-results-snapshot}
+      KAFKA_TOPIC_VOTING_CATALOG_LATEST: ${PROJECTOR_KAFKA_TOPIC_VOTING_CATALOG_LATEST:-voting-catalog-latest}
+      KAFKA_TOPIC_VOTING_POLICY_LATEST: ${PROJECTOR_KAFKA_TOPIC_VOTING_POLICY_LATEST:-voting-policy-latest}
+      PROJECTOR_SNAPSHOT_FLUSH_INTERVAL_MS: ${PROJECTOR_SNAPSHOT_FLUSH_INTERVAL_MS:-333}
+      LOG_LEVEL: ${PROJECTOR_LOG_LEVEL:-info}
+    ports:
+      - "8081:8081"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8081/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  frontend:
+    image: localhost/voting-platform-frontend:latest
+    build:
+      context: ../../apps/frontend
+      dockerfile: Dockerfile
+    container_name: ${CONTAINER_NAME_PREFIX:-voting-platform}-frontend
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    environment:
+      API_UPSTREAM_SCHEME: ${FRONTEND_API_UPSTREAM_SCHEME:-http}
+      API_UPSTREAM_HOST: ${FRONTEND_API_UPSTREAM_HOST:-api}
+      API_UPSTREAM_PORT: ${FRONTEND_API_UPSTREAM_PORT:-8080}
+      API_EDGE_AUTH_SECRET: ${FRONTEND_API_EDGE_AUTH_SECRET:-}
+      API_EDGE_AUTH_HEADER: ${API_EDGE_PROXY_AUTH_HEADER:-X-App-Edge-Auth}
+      FEATURE_SLIDE_VOTE_MODE: ${FRONTEND_FEATURE_SLIDE_VOTE_MODE:-full}
+      FEATURE_INTERACTION_TELEMETRY: ${FRONTEND_FEATURE_INTERACTION_TELEMETRY:-true}
+      FEATURE_POW_VOTE: ${FRONTEND_FEATURE_POW_VOTE:-true}
+      APP_PRODUCT_NAME: ${APP_PRODUCT_NAME:-Voting Platform}
+      APP_TAGLINE: ${APP_TAGLINE:-Secure and observable voting}
+      APP_DESCRIPTION: ${APP_DESCRIPTION:-White-label voting platform with anti-abuse controls and observability.}
+      APP_VOTE_PAGE_TITLE: ${APP_VOTE_PAGE_TITLE:-Voting Platform - Vote}
+      APP_ADMIN_PAGE_TITLE: ${APP_ADMIN_PAGE_TITLE:-Voting Platform - Admin}
+      APP_VOTE_RATE_LIMIT: ${FRONTEND_VOTE_RATE_LIMIT:-20r/m}
+      APP_RESULTS_RETRY_ATTEMPTS: ${FRONTEND_RESULTS_RETRY_ATTEMPTS:-3}
+      APP_RESULTS_RETRY_INTERVAL_MS: ${FRONTEND_RESULTS_RETRY_INTERVAL_MS:-200}
+      APP_POST_CONFIRM_DELAY_MS: ${FRONTEND_POST_CONFIRM_DELAY_MS:-500}
+      ASSET_VERSION: ${FRONTEND_ASSET_VERSION:-}
+      NGINX_DNS_RESOLVER: ${FRONTEND_NGINX_DNS_RESOLVER:-}
+    ports:
+      - "3000:80"
+
+  benchmark-lb:
+    image: localhost/voting-platform-frontend:latest
+    container_name: ${CONTAINER_NAME_PREFIX:-voting-platform}-benchmark-lb
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+      api-b:
+        condition: service_healthy
+    environment:
+      API_EDGE_AUTH_SECRET: ${FRONTEND_API_EDGE_AUTH_SECRET:-}
+      API_EDGE_AUTH_HEADER: ${API_EDGE_PROXY_AUTH_HEADER:-X-App-Edge-Auth}
+      NGINX_DEFAULT_TEMPLATE_PATH: /etc/nginx/custom/benchmark-lb.conf.template
+      NGINX_DNS_RESOLVER: ${FRONTEND_NGINX_DNS_RESOLVER:-}
+      ASSET_VERSION: ${FRONTEND_ASSET_VERSION:-}
+      FEATURE_SLIDE_VOTE_MODE: ${FRONTEND_FEATURE_SLIDE_VOTE_MODE:-full}
+      FEATURE_INTERACTION_TELEMETRY: ${FRONTEND_FEATURE_INTERACTION_TELEMETRY:-true}
+      FEATURE_POW_VOTE: ${FRONTEND_FEATURE_POW_VOTE:-true}
+      APP_PRODUCT_NAME: ${APP_PRODUCT_NAME:-Voting Platform}
+      APP_TAGLINE: ${APP_TAGLINE:-Secure and observable voting}
+      APP_DESCRIPTION: ${APP_DESCRIPTION:-White-label voting platform with anti-abuse controls and observability.}
+      APP_VOTE_PAGE_TITLE: ${APP_VOTE_PAGE_TITLE:-Voting Platform - Vote}
+      APP_ADMIN_PAGE_TITLE: ${APP_ADMIN_PAGE_TITLE:-Voting Platform - Admin}
+      APP_VOTE_RATE_LIMIT: ${FRONTEND_VOTE_RATE_LIMIT:-20r/m}
+      APP_RESULTS_RETRY_ATTEMPTS: ${FRONTEND_RESULTS_RETRY_ATTEMPTS:-3}
+      APP_RESULTS_RETRY_INTERVAL_MS: ${FRONTEND_RESULTS_RETRY_INTERVAL_MS:-200}
+      APP_POST_CONFIRM_DELAY_MS: ${FRONTEND_POST_CONFIRM_DELAY_MS:-500}
+    ports:
+      - "${BENCHMARK_LB_BIND_IP:-127.0.0.1}:${BENCHMARK_LB_PORT:-3002}:80"
+
+  prometheus:
+    image: prom/prometheus:v2.54.1
+    container_name: ${CONTAINER_NAME_PREFIX:-voting-platform}-prometheus
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_started
+      projector:
+        condition: service_started
+    ports:
+      - "9090:9090"
+    volumes:
+      - ../observability/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ../observability/prometheus/rules:/etc/prometheus/rules:ro
+
+  grafana:
+    image: grafana/grafana:11.1.4
+    container_name: ${CONTAINER_NAME_PREFIX:-voting-platform}-grafana
+    restart: unless-stopped
+    ports:
+      - "3001:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
+    volumes:
+      - ../observability/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ../observability/grafana/dashboards:/var/lib/grafana/dashboards:ro
+
+  kafka-exporter:
+    image: danielqsj/kafka-exporter:v1.7.0
+    container_name: ${CONTAINER_NAME_PREFIX:-voting-platform}-kafka-exporter
+    restart: unless-stopped
+    depends_on:
+      kafka:
+        condition: service_healthy
+    command:
+      - --kafka.server=kafka:9092
+    ports:
+      - "9308:9308"
+
+  node-exporter:
+    image: prom/node-exporter:v1.8.2
+    container_name: ${CONTAINER_NAME_PREFIX:-voting-platform}-node-exporter
+    restart: unless-stopped
+    ports:
+      - "9100:9100"
+
+  swagger-ui:
+    image: swaggerapi/swagger-ui:v5.17.14
+    container_name: ${CONTAINER_NAME_PREFIX:-voting-platform}-swagger-ui
+    restart: unless-stopped
+    depends_on:
+      - api
+    ports:
+      - "3003:8080"
+    environment:
+      - SWAGGER_JSON=/spec/openapi.json
+      - BASE_URL=/swagger
+    volumes:
+      - ../../contracts/http/generated:/spec:ro
+
+networks:
+  default:
+    name: ${COMPOSE_NETWORK_NAME:-voting-platform-network}
