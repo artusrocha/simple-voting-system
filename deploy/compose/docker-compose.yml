@@ -331,6 +331,32 @@ services:
     volumes:
       - ../../contracts/http/generated:/spec:ro
 
+  typespec-compiler:
+    build:
+      context: ../../apps/typespec
+      dockerfile: Dockerfile
+    container_name: ${CONTAINER_NAME_PREFIX:-voting-platform}-typespec-compiler
+    restart: unless-stopped
+    volumes:
+      - ../../contracts/http/typespec:/typespec:rw
+      - ../../contracts/http/openapi:/openapi:rw
+
+  scalar-api:
+    build:
+      context: ../../apps/typespec
+      dockerfile: Dockerfile
+    container_name: ${CONTAINER_NAME_PREFIX:-voting-platform}-scalar-api
+    restart: unless-stopped
+    depends_on:
+      typespec-compiler:
+        condition: service_started
+    command:
+      ["sh", "-c", "cd /openapi && scalar document serve @typespec/openapi3/openapi.yaml --port 3000 --watch"]
+    volumes:
+      - ../../contracts/http/openapi:/openapi:ro
+    ports:
+      - "3004:3000"
+
 networks:
   default:
     name: ${COMPOSE_NETWORK_NAME:-voting-platform-network}

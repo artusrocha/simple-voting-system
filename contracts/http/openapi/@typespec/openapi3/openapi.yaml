@@ -1,0 +1,997 @@
+openapi: 3.0.0
+info:
+  title: Voting Platform API
+  version: 0.0.0
+tags:
+  - name: Operational
+  - name: Votings
+  - name: Votes
+  - name: Results
+  - name: Policies
+paths:
+  /healthz:
+    get:
+      operationId: healthz
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                required:
+                  - status
+      tags:
+        - Operational
+  /metrics:
+    get:
+      operationId: metrics
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            text/plain:
+              schema:
+                type: string
+      tags:
+        - Operational
+  /votes/{voteId}/status:
+    get:
+      operationId: VoteStatusApi_getVoteStatus
+      parameters:
+        - name: voteId
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/ULID'
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VoteStatusResponse'
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      tags:
+        - Votes
+  /votings:
+    post:
+      operationId: VotingsApi_createVoting
+      parameters: []
+      responses:
+        '201':
+          description: The request has succeeded and a new resource has been created as a result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Voting'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      tags:
+        - Votings
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateVotingRequest'
+    get:
+      operationId: VotingsApi_listVotings
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - CREATED
+              - OPEN
+              - CLOSED
+              - CANCELLED
+          explode: false
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Voting'
+      tags:
+        - Votings
+  /votings/{votingId}:
+    get:
+      operationId: VotingApi_getVoting
+      parameters:
+        - name: votingId
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/ULID'
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Voting'
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      tags:
+        - Votings
+    patch:
+      operationId: VotingApi_updateVoting
+      parameters:
+        - name: votingId
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/ULID'
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Voting'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      tags:
+        - Votings
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateVotingRequest'
+  /votings/{votingId}/policies:
+    post:
+      operationId: PolicyApi_createPolicy
+      parameters:
+        - name: votingId
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/ULID'
+      responses:
+        '201':
+          description: The request has succeeded and a new resource has been created as a result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PolicyResponse'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      tags:
+        - Policies
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PolicyRequest'
+  /votings/{votingId}/results:
+    get:
+      operationId: ResultsApi_getResults
+      description: Returns the latest projected snapshot for the voting. Until a snapshot is consumed, the API returns a zero-state result with the correct candidate keys and empty hourly buckets.
+      parameters:
+        - name: votingId
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/ULID'
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResultsResponse'
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      tags:
+        - Results
+  /votings/{votingId}/vote-challenges:
+    post:
+      operationId: VoteChallengeApi_createVoteChallenge
+      description: Issues a proof-of-work challenge for an OPEN voting when PoW is enabled. Returns 404 when the voting does not exist or PoW is disabled, 409 when the voting is not OPEN, and 400 when the voting window has not started or has already ended.
+      parameters:
+        - name: votingId
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/ULID'
+      responses:
+        '201':
+          description: The request has succeeded and a new resource has been created as a result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VoteChallengeResponse'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: The request conflicts with the current state of the server.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      tags:
+        - Votes
+  /votings/{votingId}/votes:
+    post:
+      operationId: VotesApi_registerVote
+      description: Registers a vote. When proof-of-work is enabled for the voting, requests without a valid challenge submission may fail with 400 or 403. When the recommended edge path is used, the frontend proxy may also reject requests with 429 before they reach the API.
+      parameters:
+        - name: votingId
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/ULID'
+        - name: confirm
+          in: query
+          required: false
+          schema:
+            type: boolean
+          explode: false
+        - name: timeoutMs
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+          explode: false
+      responses:
+        '202':
+          description: The request has been accepted for processing, but processing has not yet completed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VoteAcceptedResponse'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: The request conflicts with the current state of the server.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      tags:
+        - Votes
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VoteRequest'
+  /votings/{votingId}/votes/{challengeId}:
+    post:
+      operationId: VotesWithChallengeApi_registerVoteWithChallenge
+      description: Registers a vote tied to a previously issued proof-of-work challenge. This is the required route when PoW is enabled for the target voting.
+      parameters:
+        - name: votingId
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/ULID'
+        - name: challengeId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: confirm
+          in: query
+          required: false
+          schema:
+            type: boolean
+          explode: false
+        - name: timeoutMs
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+          explode: false
+      responses:
+        '202':
+          description: The request has been accepted for processing, but processing has not yet completed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VoteAcceptedResponse'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Access is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: The request conflicts with the current state of the server.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      tags:
+        - Votes
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VoteRequest'
+components:
+  schemas:
+    AntiAbuseConfig:
+      type: object
+      required:
+        - honeypotEnabled
+        - slideVoteMode
+        - interactionTelemetryEnabled
+        - pow
+      properties:
+        honeypotEnabled:
+          type: boolean
+        slideVoteMode:
+          type: string
+          enum:
+            - 'off'
+            - button
+            - full
+        interactionTelemetryEnabled:
+          type: boolean
+        pow:
+          $ref: '#/components/schemas/PowConfig'
+    AntiAbuseConfigPatch:
+      type: object
+      properties:
+        honeypotEnabled:
+          type: boolean
+        slideVoteMode:
+          type: string
+          enum:
+            - 'off'
+            - button
+            - full
+        interactionTelemetryEnabled:
+          type: boolean
+        pow:
+          $ref: '#/components/schemas/PowConfigPatch'
+    Candidate:
+      type: object
+      required:
+        - candidateId
+        - name
+      properties:
+        candidateId:
+          type: string
+        name:
+          type: string
+    CreateVotingRequest:
+      type: object
+      required:
+        - name
+        - candidates
+      properties:
+        name:
+          type: string
+        status:
+          type: string
+          enum:
+            - CREATED
+            - OPEN
+            - CLOSED
+            - CANCELLED
+        candidates:
+          type: array
+          items:
+            $ref: '#/components/schemas/Candidate'
+        startsAt:
+          type: string
+          format: date-time
+        endsAt:
+          type: string
+          format: date-time
+        antiAbuse:
+          $ref: '#/components/schemas/AntiAbuseConfig'
+    ErrorResponse:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+    PolicyRequest:
+      type: object
+      required:
+        - targetType
+        - targetValue
+        - action
+        - effectiveMode
+      properties:
+        targetType:
+          type: string
+          enum:
+            - IP
+        targetValue:
+          type: string
+        action:
+          type: string
+          enum:
+            - ACTIVATE
+            - DEACTIVATE
+        effectiveMode:
+          type: string
+          enum:
+            - FORWARD_ONLY
+            - RETROACTIVE
+        reason:
+          type: string
+    PolicyResponse:
+      type: object
+      required:
+        - policyEventId
+        - votingId
+        - targetType
+        - targetValue
+        - action
+        - effectiveMode
+        - createdAt
+      properties:
+        policyEventId:
+          $ref: '#/components/schemas/ULID'
+        votingId:
+          $ref: '#/components/schemas/ULID'
+        targetType:
+          type: string
+          enum:
+            - IP
+        targetValue:
+          type: string
+        action:
+          type: string
+          enum:
+            - ACTIVATE
+            - DEACTIVATE
+        effectiveMode:
+          type: string
+          enum:
+            - FORWARD_ONLY
+            - RETROACTIVE
+        createdAt:
+          type: string
+          format: date-time
+    PowChallengeParams:
+      type: object
+      properties:
+        difficultyBits:
+          type: integer
+          format: int32
+        memoryKiB:
+          type: integer
+          format: int32
+        timeCost:
+          type: integer
+          format: int32
+        parallelism:
+          type: integer
+          format: int32
+        hashLength:
+          type: integer
+          format: int32
+    PowConfig:
+      type: object
+      required:
+        - enabled
+        - ttlSeconds
+        - baseDifficultyBits
+        - maxDifficultyBits
+        - adaptiveWindowSeconds
+      properties:
+        enabled:
+          type: boolean
+        algorithm:
+          type: string
+          enum:
+            - sha256
+            - argon2id
+        ttlSeconds:
+          type: integer
+          format: int32
+        baseDifficultyBits:
+          type: integer
+          format: int32
+        maxDifficultyBits:
+          type: integer
+          format: int32
+        adaptiveWindowSeconds:
+          type: integer
+          format: int32
+        baseMemoryKiB:
+          type: integer
+          format: int32
+        memoryGrowthFactor:
+          type: number
+          format: double
+        difficultyStepEvery:
+          type: integer
+          format: int32
+        memoryKiB:
+          type: integer
+          format: int32
+        timeCost:
+          type: integer
+          format: int32
+        parallelism:
+          type: integer
+          format: int32
+        hashLength:
+          type: integer
+          format: int32
+    PowConfigPatch:
+      type: object
+      properties:
+        enabled:
+          type: boolean
+        algorithm:
+          type: string
+          enum:
+            - sha256
+            - argon2id
+        ttlSeconds:
+          type: integer
+          format: int32
+        baseDifficultyBits:
+          type: integer
+          format: int32
+        maxDifficultyBits:
+          type: integer
+          format: int32
+        adaptiveWindowSeconds:
+          type: integer
+          format: int32
+        baseMemoryKiB:
+          type: integer
+          format: int32
+        memoryGrowthFactor:
+          type: number
+          format: double
+        difficultyStepEvery:
+          type: integer
+          format: int32
+        memoryKiB:
+          type: integer
+          format: int32
+        timeCost:
+          type: integer
+          format: int32
+        parallelism:
+          type: integer
+          format: int32
+        hashLength:
+          type: integer
+          format: int32
+    ResultsResponse:
+      type: object
+      required:
+        - votingId
+        - totalVotes
+        - byCandidate
+        - percentageByCandidate
+        - byHour
+        - updatedAt
+      properties:
+        votingId:
+          $ref: '#/components/schemas/ULID'
+        totalVotes:
+          type: integer
+          format: int64
+        byCandidate:
+          type: object
+          additionalProperties:
+            type: integer
+            format: int64
+        percentageByCandidate:
+          type: object
+          additionalProperties:
+            type: number
+            format: double
+        byHour:
+          type: object
+          additionalProperties:
+            type: integer
+            format: int64
+        checkpoint:
+          type: string
+        updatedAt:
+          type: string
+          format: date-time
+    ULID:
+      type: string
+    UpdateVotingRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        status:
+          type: string
+          enum:
+            - CREATED
+            - OPEN
+            - CLOSED
+            - CANCELLED
+        startsAt:
+          type: string
+          format: date-time
+        endsAt:
+          type: string
+          format: date-time
+        candidates:
+          type: array
+          items:
+            $ref: '#/components/schemas/Candidate'
+        antiAbuse:
+          $ref: '#/components/schemas/AntiAbuseConfigPatch'
+    VoteAcceptedResponse:
+      type: object
+      required:
+        - status
+        - voteId
+        - votingId
+        - message
+      properties:
+        status:
+          type: string
+          enum:
+            - PENDING
+            - WRITTEN
+            - FAILED
+        voteId:
+          $ref: '#/components/schemas/ULID'
+        votingId:
+          $ref: '#/components/schemas/ULID'
+        message:
+          type: string
+    VoteChallengeResponse:
+      type: object
+      required:
+        - challengeId
+        - token
+        - algorithm
+        - expiresAt
+      properties:
+        challengeId:
+          type: string
+        token:
+          type: string
+        algorithm:
+          type: string
+          enum:
+            - sha256
+            - argon2id
+        difficultyBits:
+          type: integer
+          format: int32
+        params:
+          $ref: '#/components/schemas/PowChallengeParams'
+        expiresAt:
+          type: string
+          format: date-time
+    VoteClientContext:
+      type: object
+      properties:
+        userAgent:
+          type: string
+        platform:
+          type: string
+        language:
+          type: string
+        languages:
+          type: array
+          items:
+            type: string
+        screenWidth:
+          type: integer
+          format: int32
+        screenHeight:
+          type: integer
+          format: int32
+        viewportWidth:
+          type: integer
+          format: int32
+        viewportHeight:
+          type: integer
+          format: int32
+        devicePixelRatio:
+          type: number
+          format: double
+        maxTouchPoints:
+          type: integer
+          format: int32
+        timezone:
+          type: string
+        mobile:
+          type: boolean
+    VoteInteractionSignal:
+      type: object
+      properties:
+        openedAt:
+          type: string
+          format: date-time
+        startedAt:
+          type: string
+          format: date-time
+        completedAt:
+          type: string
+          format: date-time
+        openToStartMs:
+          type: integer
+          format: int32
+        gestureDurationMs:
+          type: integer
+          format: int32
+        moveEvents:
+          type: integer
+          format: int32
+        maxProgress:
+          type: number
+          format: double
+        completed:
+          type: boolean
+        cancelled:
+          type: boolean
+        mode:
+          type: string
+          enum:
+            - 'off'
+            - button
+            - full
+    VotePowClientMetrics:
+      type: object
+      properties:
+        challengeId:
+          type: string
+        algorithm:
+          type: string
+          enum:
+            - sha256
+            - argon2id
+        challengeReceivedAt:
+          type: string
+          format: date-time
+        solveStartedAt:
+          type: string
+          format: date-time
+        solveCompletedAt:
+          type: string
+          format: date-time
+        submitStartedAt:
+          type: string
+          format: date-time
+        solveDurationMs:
+          type: integer
+          format: int32
+        retryAttempt:
+          type: integer
+          format: int32
+    VoteProof:
+      type: object
+      required:
+        - token
+        - nonce
+      properties:
+        token:
+          type: string
+        nonce:
+          type: string
+    VoteRequest:
+      type: object
+      required:
+        - candidateId
+      properties:
+        candidateId:
+          type: string
+        ip:
+          type: string
+        honeypot:
+          type: string
+        pow:
+          $ref: '#/components/schemas/VoteProof'
+        interactionSignal:
+          $ref: '#/components/schemas/VoteInteractionSignal'
+        powClientMetrics:
+          $ref: '#/components/schemas/VotePowClientMetrics'
+        clientContext:
+          $ref: '#/components/schemas/VoteClientContext'
+    VoteStatusResponse:
+      type: object
+      required:
+        - voteId
+        - votingId
+        - status
+        - updatedAt
+      properties:
+        voteId:
+          $ref: '#/components/schemas/ULID'
+        votingId:
+          $ref: '#/components/schemas/ULID'
+        status:
+          type: string
+          enum:
+            - PENDING
+            - WRITTEN
+            - FAILED
+        updatedAt:
+          type: string
+          format: date-time
+    Voting:
+      type: object
+      required:
+        - votingId
+        - name
+        - status
+        - candidates
+        - antiAbuse
+        - createdAt
+      properties:
+        votingId:
+          $ref: '#/components/schemas/ULID'
+        name:
+          type: string
+        status:
+          type: string
+          enum:
+            - CREATED
+            - OPEN
+            - CLOSED
+            - CANCELLED
+        candidates:
+          type: array
+          items:
+            $ref: '#/components/schemas/Candidate'
+        startsAt:
+          type: string
+          format: date-time
+        endsAt:
+          type: string
+          format: date-time
+        antiAbuse:
+          $ref: '#/components/schemas/AntiAbuseConfig'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+servers:
+  - url: http://localhost:8080
+    description: Direct API (local/internal)
+    variables: {}
+  - url: http://localhost:3000/api
+    description: Frontend edge (recommended)
+    variables: {}

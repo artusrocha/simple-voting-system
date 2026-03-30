@@ -129,6 +129,7 @@ urls: ## Print common local URLs
 	@printf 'projector:    http://localhost:8081\n'
 	@printf 'grafana:      http://localhost:3001\n'
 	@printf 'prometheus:   http://localhost:19090\n'
+	@printf 'scalar api:   http://localhost:3004\n'
 	@printf 'kafka ui:     http://localhost:8085\n'
 
 load-create-voting: ## Create a load-test voting

@@ -6,7 +6,7 @@ using TypeSpec.Http;
 using TypeSpec.Rest;
 using TypeSpec.OpenAPI;
 
-@service({ title: "Voting Platform API" })
+@service(#{ title: "Voting Platform API" })
 @server("http://localhost:3000/api", "Frontend edge (recommended)")
 @server("http://localhost:8080", "Direct API (local/internal)")
 namespace VotingPlatform.Api;

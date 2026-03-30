@@ -6,7 +6,7 @@
 - gerenciamento do ciclo de vida por votação, submissão de votos, projeção de resultados e políticas de bloqueio por IP
 - controles antiabuso com honeypot, proof-of-work adaptativo, rate limiting na borda e rastreamento distribuído de desafios
 - observabilidade com Prometheus e três dashboards do Grafana já provisionados
-- execução local via Compose, configuração baseada em arquivos INI e toolchain Go containerizada
+- execução local via Compose, configuração baseada em arquivos ENV e toolchain Go containerizada
 
 ## Benchmarks
 
@@ -36,7 +36,8 @@ A arquitetura orientada a eventos com Kafka demonstra escalabilidade horizontal 
 
 ## Contratos
 
-Para as API's Rest o contrato está descrito em formato [TypeSpec](https://typespec.io/playground/) em [contracts/http/typespec/main.tsp](contracts/http/typespec/main.tsp) (em breve teremos o OpenAPI).  
+Para as API's Rest o contrato está descrito em formato [TypeSpec](https://typespec.io/playground/) em [contracts/http/typespec/main.tsp](contracts/http/typespec/main.tsp) e OpenAPI [contracts/http/openapi/@typespec/openapi3/openapi.yaml](contracts/http/openapi/@typespec/openapi3/openapi.yaml).  
+No ambiente de desenvolvimento, acesse a UI de contrato em [http://localhost:3004](http://localhost:3004).
 
 Para contratos de eventos no Kafka os contratos estão em [contracts/events/asyncapi/voting-events.yaml](contracts/events/asyncapi/voting-events.yaml) e [contracts/events/schemas/jsonschema](contracts/events/schemas/jsonschema)
 
