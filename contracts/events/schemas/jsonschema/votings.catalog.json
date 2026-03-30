@@ -1,0 +1,81 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://voting-platform.example/contracts/events/votings.catalog.json",
+  "title": "votings.catalog",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["eventId", "occurredAt", "voting"],
+  "$defs": {
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "candidate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["candidateId", "name"],
+      "properties": {
+        "candidateId": { "type": "string", "minLength": 1 },
+        "name": { "type": "string", "minLength": 1 }
+      }
+    },
+    "pow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["enabled", "ttlSeconds", "baseDifficultyBits", "maxDifficultyBits", "adaptiveWindowSeconds"],
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "algorithm": { "type": "string", "enum": ["sha256", "argon2id"] },
+        "ttlSeconds": { "type": "integer", "minimum": 1 },
+        "baseDifficultyBits": { "type": "integer", "minimum": 0 },
+        "maxDifficultyBits": { "type": "integer", "minimum": 0 },
+        "adaptiveWindowSeconds": { "type": "integer", "minimum": 1 },
+        "baseMemoryKiB": { "type": "integer", "minimum": 0 },
+        "memoryGrowthFactor": { "type": "number", "minimum": 0 },
+        "difficultyStepEvery": { "type": "integer", "minimum": 0 },
+        "memoryKiB": { "type": "integer", "minimum": 0 },
+        "timeCost": { "type": "integer", "minimum": 0 },
+        "parallelism": { "type": "integer", "minimum": 0 },
+        "hashLength": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "antiAbuse": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["honeypotEnabled", "slideVoteMode", "interactionTelemetryEnabled", "pow"],
+      "properties": {
+        "honeypotEnabled": { "type": "boolean" },
+        "slideVoteMode": { "type": "string", "enum": ["off", "button", "full"] },
+        "interactionTelemetryEnabled": { "type": "boolean" },
+        "pow": { "$ref": "#/$defs/pow" }
+      }
+    },
+    "voting": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["votingId", "name", "status", "candidates", "antiAbuse", "createdAt"],
+      "properties": {
+        "votingId": { "type": "string", "minLength": 1 },
+        "name": { "type": "string", "minLength": 1 },
+        "status": {
+          "type": "string",
+          "enum": ["CREATED", "OPEN", "CLOSED", "CANCELLED"]
+        },
+        "candidates": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/candidate" }
+        },
+        "startsAt": { "$ref": "#/$defs/timestamp" },
+        "endsAt": { "$ref": "#/$defs/timestamp" },
+        "antiAbuse": { "$ref": "#/$defs/antiAbuse" },
+        "createdAt": { "$ref": "#/$defs/timestamp" },
+        "updatedAt": { "$ref": "#/$defs/timestamp" }
+      }
+    }
+  },
+  "properties": {
+    "eventId": { "type": "string", "minLength": 1 },
+    "occurredAt": { "$ref": "#/$defs/timestamp" },
+    "voting": { "$ref": "#/$defs/voting" }
+  }
+}

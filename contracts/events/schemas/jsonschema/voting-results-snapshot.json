@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://voting-platform.example/contracts/events/voting-results-snapshot.json",
+  "title": "voting-results-snapshot",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["votingId", "totalVotes", "byCandidate", "percentageByCandidate", "byHour", "updatedAt"],
+  "properties": {
+    "votingId": { "type": "string", "minLength": 1 },
+    "totalVotes": { "type": "integer", "minimum": 0 },
+    "byCandidate": {
+      "type": "object",
+      "additionalProperties": { "type": "integer", "minimum": 0 }
+    },
+    "percentageByCandidate": {
+      "type": "object",
+      "additionalProperties": { "type": "number", "minimum": 0 }
+    },
+    "byHour": {
+      "type": "object",
+      "additionalProperties": { "type": "integer", "minimum": 0 }
+    },
+    "checkpoint": { "type": "string" },
+    "updatedAt": { "type": "string", "format": "date-time" },
+    "replayMetadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "initialOffsetsByPartition": {
+          "type": "object",
+          "additionalProperties": { "type": "integer", "minimum": 0 }
+        },
+        "lastProcessedOffsetsByPartition": {
+          "type": "object",
+          "additionalProperties": { "type": "integer", "minimum": 0 }
+        }
+      }
+    }
+  }
+}

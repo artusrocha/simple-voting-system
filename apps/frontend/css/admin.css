@@ -1,0 +1,277 @@
+.admin-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.admin-header h2 {
+  margin: 0;
+}
+
+.voting-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--surface);
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.voting-table th,
+.voting-table td {
+  padding: 12px 16px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+
+.voting-table th {
+  background: #f8f9fa;
+  font-weight: 600;
+  color: var(--ink-muted);
+  font-size: 0.85rem;
+  text-transform: uppercase;
+}
+
+.voting-table tr:last-child td {
+  border-bottom: none;
+}
+
+.voting-table tr:hover td {
+  background: #f8f9fc;
+}
+
+.voting-table .actions {
+  display: flex;
+  gap: 8px;
+}
+
+.voting-table .btn-small {
+  padding: 6px 12px;
+  font-size: 0.8rem;
+  border-radius: 6px;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  background: white;
+}
+
+.voting-table .btn-small:hover {
+  background: #f0f0f0;
+}
+
+.voting-table .btn-edit {
+  color: var(--accent);
+}
+
+.voting-table .btn-view {
+  color: #2f9e44;
+}
+
+.voting-form {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 20px;
+  margin-top: 20px;
+}
+
+.voting-form h3 {
+  margin-top: 0;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form-group label {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--ink-muted);
+}
+
+.form-group input,
+.form-group select {
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 0.95rem;
+}
+
+.candidates-editor {
+  margin-top: 16px;
+}
+
+.anti-abuse-section {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+}
+
+.anti-abuse-header h4,
+.pow-config-header {
+  margin: 0;
+}
+
+.anti-abuse-header p {
+  margin: 6px 0 0;
+  color: var(--ink-muted);
+  font-size: 0.9rem;
+}
+
+.anti-abuse-grid {
+  align-items: end;
+  margin-top: 16px;
+}
+
+.toggle-field {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  font-weight: 500;
+  color: var(--ink-muted);
+}
+
+.toggle-field input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+}
+
+.pow-config-card {
+  margin-top: 16px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: #f8f9fc;
+}
+
+.pow-config-grid {
+  margin-top: 12px;
+}
+
+.pow-config-card.inactive {
+  opacity: 0.75;
+}
+
+.pow-config-card input:disabled {
+  background: #eef1f5;
+  color: #7b8794;
+  cursor: not-allowed;
+}
+
+.pow-config-card select:disabled,
+.pow-optional-disabled input {
+  background: #eef1f5;
+  color: #7b8794;
+  cursor: not-allowed;
+}
+
+.pow-optional-disabled label::after {
+  content: " (argon2id only)";
+  color: #7b8794;
+  font-size: 0.8rem;
+}
+
+.candidate-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.candidate-row input {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+.candidate-row .btn-remove {
+  padding: 8px 12px;
+  background: #fee2e2;
+  color: #dc2626;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.form-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.submit-btn {
+  padding: 10px 20px;
+  background: linear-gradient(90deg, #0f5eb5, var(--accent));
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.submit-btn:hover {
+  opacity: 0.9;
+}
+
+.submit-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.cancel-btn {
+  padding: 10px 20px;
+  background: white;
+  color: var(--ink-muted);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+
+.cancel-btn:hover {
+  background: #f8f9fa;
+}
+
+.results-section {
+  margin-top: 20px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 20px;
+}
+
+.results-section h3 {
+  margin-top: 0;
+}
+
+.results-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.results-table th,
+.results-table td {
+  padding: 8px 12px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+
+.results-table th {
+  font-weight: 600;
+  color: var(--ink-muted);
+}
+
+.total-row td {
+  font-weight: 600;
+  border-top: 2px solid var(--border);
+}

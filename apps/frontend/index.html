@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>${APP_PRODUCT_NAME}</title>
+    <link rel="stylesheet" href="/styles.css?v=${ASSET_VERSION}" />
+  </head>
+  <body>
+    <main class="page">
+      <header class="hero">
+        <h1>${APP_PRODUCT_NAME}</h1>
+        <p>${APP_TAGLINE}</p>
+      </header>
+    </main>
+    <script>
+      const path = window.location.pathname;
+      if (path === '/' || path === '/index.html') {
+        window.location.href = '/vote.html';
+      } else if (path === '/vote.html' || path === '/vote') {
+        window.location.href = '/vote.html';
+      } else if (path === '/admin.html' || path === '/admin') {
+        window.location.href = '/admin.html';
+      } else {
+        window.location.href = '/vote.html';
+      }
+    </script>
+  </body>
+</html>

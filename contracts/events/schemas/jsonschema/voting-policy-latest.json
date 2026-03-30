@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://voting-platform.example/contracts/events/voting-policy-latest.json",
+  "title": "voting-policy-latest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["votingId", "targetValue", "active", "updatedAt"],
+  "properties": {
+    "votingId": { "type": "string", "minLength": 1 },
+    "targetValue": { "type": "string", "minLength": 1 },
+    "active": { "type": "boolean" },
+    "updatedAt": { "type": "string", "format": "date-time" }
+  }
+}

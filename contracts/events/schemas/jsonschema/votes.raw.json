@@ -1,0 +1,127 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://voting-platform.example/contracts/events/votes.raw.json",
+  "title": "votes.raw",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["voteId", "votingId", "candidateId", "occurredAt", "ip"],
+  "$defs": {
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "powChallengeParams": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "difficultyBits": { "type": "integer", "minimum": 0 },
+        "memoryKiB": { "type": "integer", "minimum": 0 },
+        "timeCost": { "type": "integer", "minimum": 0 },
+        "parallelism": { "type": "integer", "minimum": 0 },
+        "hashLength": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "interaction": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "openedAt": { "$ref": "#/$defs/timestamp" },
+        "startedAt": { "$ref": "#/$defs/timestamp" },
+        "completedAt": { "$ref": "#/$defs/timestamp" },
+        "openToStartMs": { "type": "integer", "minimum": 0 },
+        "gestureDurationMs": { "type": "integer", "minimum": 0 },
+        "moveEvents": { "type": "integer", "minimum": 0 },
+        "maxProgress": { "type": "number", "minimum": 0 },
+        "completed": { "type": "boolean" },
+        "cancelled": { "type": "boolean" },
+        "mode": { "type": "string", "enum": ["off", "button", "full"] }
+      }
+    },
+    "clientContext": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "userAgent": { "type": "string" },
+        "platform": { "type": "string" },
+        "language": { "type": "string" },
+        "languages": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "screenWidth": { "type": "integer", "minimum": 0 },
+        "screenHeight": { "type": "integer", "minimum": 0 },
+        "viewportWidth": { "type": "integer", "minimum": 0 },
+        "viewportHeight": { "type": "integer", "minimum": 0 },
+        "devicePixelRatio": { "type": "number", "minimum": 0 },
+        "maxTouchPoints": { "type": "integer", "minimum": 0 },
+        "timezone": { "type": "string" },
+        "mobile": { "type": "boolean" }
+      }
+    },
+    "powDetails": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "challengeId": { "type": "string", "minLength": 1 },
+        "algorithm": { "type": "string", "enum": ["sha256", "argon2id"] },
+        "difficultyBits": { "type": "integer", "minimum": 0 },
+        "params": { "$ref": "#/$defs/powChallengeParams" },
+        "validated": { "type": "boolean" },
+        "issuedAt": { "$ref": "#/$defs/timestamp" },
+        "expiresAt": { "$ref": "#/$defs/timestamp" },
+        "challengeReceivedAt": { "$ref": "#/$defs/timestamp" },
+        "solveStartedAt": { "$ref": "#/$defs/timestamp" },
+        "solveCompletedAt": { "$ref": "#/$defs/timestamp" },
+        "submittedAt": { "$ref": "#/$defs/timestamp" },
+        "solveDurationMs": { "type": "integer", "minimum": 0 },
+        "issueToSubmitMs": { "type": "integer", "minimum": 0 },
+        "retryAttempt": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "requestContext": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["receivedAt"],
+      "properties": {
+        "ip": { "type": "string", "minLength": 1 },
+        "sessionId": { "type": "string", "minLength": 1 },
+        "userAgent": { "type": "string" },
+        "forwardedFor": { "type": "string" },
+        "receivedAt": { "$ref": "#/$defs/timestamp" },
+        "confirm": { "type": "boolean" }
+      }
+    },
+    "antiAbuseRuntime": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "storeBackend": { "type": "string", "enum": ["memory", "valkey"] },
+        "reuseCheckStatus": { "type": "string", "enum": ["ok", "failed", "failed_open", "skipped"] },
+        "challengeIssueRecordStatus": { "type": "string", "enum": ["ok", "failed", "skipped"] },
+        "voteActivityRecordStatus": { "type": "string", "enum": ["ok", "failed", "skipped"] },
+        "sessionActivityRecordStatus": { "type": "string", "enum": ["ok", "failed", "skipped"] },
+        "errors": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        }
+      }
+    }
+  },
+  "properties": {
+    "voteId": { "type": "string", "minLength": 1 },
+    "votingId": { "type": "string", "minLength": 1 },
+    "candidateId": { "type": "string", "minLength": 1 },
+    "occurredAt": { "$ref": "#/$defs/timestamp" },
+    "ip": { "type": "string", "minLength": 1 },
+    "powChallengeId": { "type": "string", "minLength": 1 },
+    "powDifficultyBits": { "type": "integer", "minimum": 0 },
+    "powValidated": { "type": "boolean" },
+    "powIssuedAt": { "$ref": "#/$defs/timestamp" },
+    "powExpiresAt": { "$ref": "#/$defs/timestamp" },
+    "pow": { "$ref": "#/$defs/powDetails" },
+    "interaction": { "$ref": "#/$defs/interaction" },
+    "client": { "$ref": "#/$defs/clientContext" },
+    "requestContext": { "$ref": "#/$defs/requestContext" },
+    "antiAbuseRuntime": { "$ref": "#/$defs/antiAbuseRuntime" }
+  }
+}

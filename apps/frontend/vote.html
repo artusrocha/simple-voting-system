@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>${APP_VOTE_PAGE_TITLE}</title>
+    <link rel="stylesheet" href="/styles.css?v=${ASSET_VERSION}" />
+    <link rel="stylesheet" href="/css/vote.css?v=${ASSET_VERSION}" />
+  </head>
+  <body>
+    <main class="page">
+      <header class="hero">
+        <h1>${APP_PRODUCT_NAME}</h1>
+        <p>${APP_TAGLINE}</p>
+      </header>
+
+      <div id="error-message" class="error-message" style="display: none;"></div>
+
+      <section id="voting-list-section">
+        <h2>Open Votings</h2>
+        <div id="voting-list" class="voting-list"></div>
+      </section>
+
+      <section id="vote-form-section" style="display: none;">
+        <button class="back-button" onclick="backToList()">← Back to votings</button>
+        <h2 id="voting-name"></h2>
+        <div id="vote-form-card" class="vote-form-section">
+          <h3>Select a Candidate</h3>
+          <div id="vote-interaction" class="vote-interaction">
+            <div id="candidate-list" class="candidate-list"></div>
+            <div id="honeypot-container"></div>
+            <div id="vote-action-slot"></div>
+          </div>
+          <div id="vote-status" class="vote-status"></div>
+          <p id="vote-next-step" class="vote-next-step" style="display: none;">To vote again, return to the list and reopen the voting.</p>
+          <section id="results-panorama" class="results-panorama" style="display: none;">
+            <div class="results-panorama-header">
+              <h3>Current Panorama</h3>
+              <p>Partial results after your confirmed vote.</p>
+            </div>
+            <div id="results-summary" class="results-summary"></div>
+            <div id="results-breakdown" class="results-breakdown"></div>
+          </section>
+        </div>
+      </section>
+    </main>
+
+    <script src="/config.js?v=${ASSET_VERSION}"></script>
+    <script src="/js/app.js?v=${ASSET_VERSION}"></script>
+    <script src="/js/vote.js?v=${ASSET_VERSION}"></script>
+  </body>
+</html>

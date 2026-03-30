@@ -1,0 +1,15 @@
+window.APP_CONFIG = {
+  assetVersion: "${ASSET_VERSION}",
+  slideVoteMode: "${FEATURE_SLIDE_VOTE_MODE}",
+  interactionTelemetry: "${FEATURE_INTERACTION_TELEMETRY}".toLowerCase() === "true",
+  powVoteEnabled: "${FEATURE_POW_VOTE}".toLowerCase() === "true",
+  productName: "${APP_PRODUCT_NAME}",
+  tagline: "${APP_TAGLINE}",
+  description: "${APP_DESCRIPTION}",
+  votePageTitle: "${APP_VOTE_PAGE_TITLE}",
+  adminPageTitle: "${APP_ADMIN_PAGE_TITLE}",
+  voteRateLimit: "${APP_VOTE_RATE_LIMIT}",
+  resultsRetryAttempts: Number("${APP_RESULTS_RETRY_ATTEMPTS}" || 3),
+  resultsRetryIntervalMs: Number("${APP_RESULTS_RETRY_INTERVAL_MS}" || 200),
+  postConfirmDelayMs: Number("${APP_POST_CONFIRM_DELAY_MS}" || 500),
+};

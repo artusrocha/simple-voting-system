@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>${APP_ADMIN_PAGE_TITLE}</title>
+    <link rel="stylesheet" href="/styles.css?v=${ASSET_VERSION}" />
+    <link rel="stylesheet" href="/css/admin.css?v=${ASSET_VERSION}" />
+  </head>
+  <body>
+    <main class="page">
+      <header class="hero">
+        <h1>${APP_ADMIN_PAGE_TITLE}</h1>
+        <p>${APP_DESCRIPTION}</p>
+      </header>
+
+      <div class="admin-header">
+        <h2>All Votings</h2>
+        <button class="submit-btn" onclick="showCreateForm()">+ New Voting</button>
+      </div>
+
+      <div id="error-message" class="error-message" style="display: none;"></div>
+
+      <table class="voting-table">
+        <thead>
+          <tr>
+            <th>Voting ID</th>
+            <th>Name</th>
+            <th>Status</th>
+            <th>Candidates</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="voting-list"></tbody>
+      </table>
+
+      <section id="form-section" class="voting-form">
+        <h3 id="form-title">Create New Voting</h3>
+
+        <div id="voting-id-field" style="display: none;">
+          <div class="form-group">
+            <label>Voting ID</label>
+            <span id="voting-id-display" style="font-family: monospace;"></span>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="voting-name">Name</label>
+            <input type="text" id="voting-name" placeholder="Voting name">
+          </div>
+          <div class="form-group">
+            <label for="voting-status">Status</label>
+            <select id="voting-status">
+              <option value="CREATED">CREATED</option>
+              <option value="OPEN">OPEN</option>
+              <option value="CLOSED">CLOSED</option>
+              <option value="CANCELLED">CANCELLED</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="voting-starts-at">Starts At</label>
+            <input type="datetime-local" id="voting-starts-at">
+          </div>
+          <div class="form-group">
+            <label for="voting-ends-at">Ends At</label>
+            <input type="datetime-local" id="voting-ends-at">
+          </div>
+        </div>
+
+        <div class="candidates-editor">
+          <label>Candidates</label>
+          <div id="candidates-container"></div>
+          <button type="button" class="btn-small" onclick="addCandidateRow()" style="margin-top: 8px;">+ Add Candidate</button>
+        </div>
+
+        <section class="anti-abuse-section">
+          <div class="anti-abuse-header">
+            <div>
+              <h4>Anti-Abuse</h4>
+              <p>Voting-specific abuse controls. Environment feature flags may still override these settings.</p>
+            </div>
+          </div>
+
+          <div class="form-row anti-abuse-grid">
+            <label class="toggle-field">
+              <input type="checkbox" id="antiabuse-honeypot-enabled">
+              <span>Honeypot enabled</span>
+            </label>
+            <div class="form-group">
+              <label for="antiabuse-slide-vote-mode">Slide vote mode</label>
+              <select id="antiabuse-slide-vote-mode">
+                <option value="off">off</option>
+                <option value="button">button</option>
+                <option value="full">full</option>
+              </select>
+            </div>
+            <label class="toggle-field">
+              <input type="checkbox" id="antiabuse-interaction-telemetry-enabled">
+              <span>Interaction telemetry enabled</span>
+            </label>
+          </div>
+
+          <div class="pow-config-card" id="pow-config-card">
+            <div class="pow-config-header">
+              <label class="toggle-field">
+                <input type="checkbox" id="antiabuse-pow-enabled">
+                <span>Proof of Work enabled</span>
+              </label>
+            </div>
+            <div class="form-row pow-config-grid">
+              <div class="form-group">
+                <label for="antiabuse-pow-algorithm">Algorithm</label>
+                <select id="antiabuse-pow-algorithm">
+                  <option value="sha256">sha256</option>
+                  <option value="argon2id">argon2id</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="antiabuse-pow-ttl-seconds">TTL seconds</label>
+                <input type="number" id="antiabuse-pow-ttl-seconds" min="10" max="300" step="1">
+              </div>
+              <div class="form-group">
+                <label for="antiabuse-pow-base-difficulty-bits">Base difficulty bits</label>
+                <input type="number" id="antiabuse-pow-base-difficulty-bits" min="8" max="30" step="1">
+              </div>
+              <div class="form-group">
+                <label for="antiabuse-pow-max-difficulty-bits">Max difficulty bits</label>
+                <input type="number" id="antiabuse-pow-max-difficulty-bits" min="8" max="30" step="1">
+              </div>
+              <div class="form-group">
+                <label for="antiabuse-pow-adaptive-window-seconds">Adaptive window seconds</label>
+                <input type="number" id="antiabuse-pow-adaptive-window-seconds" min="10" max="3600" step="1">
+              </div>
+              <div class="form-group">
+                <label for="antiabuse-pow-memory-kib">Argon2 memory (KiB)</label>
+                <input type="number" id="antiabuse-pow-memory-kib" min="8" max="262144" step="8">
+              </div>
+              <div class="form-group">
+                <label for="antiabuse-pow-time-cost">Argon2 time cost</label>
+                <input type="number" id="antiabuse-pow-time-cost" min="1" max="10" step="1">
+              </div>
+              <div class="form-group">
+                <label for="antiabuse-pow-parallelism">Argon2 parallelism</label>
+                <input type="number" id="antiabuse-pow-parallelism" min="1" max="16" step="1">
+              </div>
+              <div class="form-group">
+                <label for="antiabuse-pow-hash-length">Argon2 hash length</label>
+                <input type="number" id="antiabuse-pow-hash-length" min="16" max="64" step="1">
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <div class="form-actions">
+          <button class="submit-btn" onclick="saveVoting()">Save</button>
+          <button class="cancel-btn" onclick="cancelForm()">Cancel</button>
+        </div>
+      </section>
+
+      <section id="results-section" class="results-section">
+        <h3>Results: <span id="results-voting-name"></span></h3>
+        <table class="results-table">
+          <thead>
+            <tr>
+              <th>Candidate ID</th>
+              <th>Name</th>
+              <th>Votes</th>
+            </tr>
+          </thead>
+          <tbody id="results-body"></tbody>
+        </table>
+        <button class="cancel-btn" onclick="closeResults()" style="margin-top: 16px;">Close</button>
+      </section>
+    </main>
+
+    <script src="/config.js?v=${ASSET_VERSION}"></script>
+    <script src="/js/app.js?v=${ASSET_VERSION}"></script>
+    <script src="/js/admin.js?v=${ASSET_VERSION}"></script>
+  </body>
+</html>

@@ -1,0 +1,130 @@
+asyncapi: 3.0.0
+info:
+  title: Voting Platform Events
+  version: 0.1.0
+  description: Kafka event contracts for voting, policy, and projection flows.
+defaultContentType: application/json
+channels:
+  votesRaw:
+    address: votes.raw
+    messages:
+      voteRaw:
+        $ref: '#/components/messages/VoteRaw'
+  votingsCatalog:
+    address: votings.catalog
+    messages:
+      votingCatalog:
+        $ref: '#/components/messages/VotingCatalog'
+  votingPolicyControl:
+    address: voting-policy-control
+    messages:
+      policyControl:
+        $ref: '#/components/messages/PolicyControl'
+  votingResultsSnapshot:
+    address: voting-results-snapshot
+    messages:
+      resultsSnapshot:
+        $ref: '#/components/messages/ResultsSnapshot'
+  votingCatalogLatest:
+    address: voting-catalog-latest
+    messages:
+      votingCatalogLatest:
+        $ref: '#/components/messages/VotingCatalogLatest'
+  votingPolicyLatest:
+    address: voting-policy-latest
+    messages:
+      policyLatest:
+        $ref: '#/components/messages/PolicyLatest'
+operations:
+  publishVoteRaw:
+    action: send
+    channel:
+      $ref: '#/channels/votesRaw'
+    messages:
+      - $ref: '#/channels/votesRaw/messages/voteRaw'
+  publishVotingCatalog:
+    action: send
+    channel:
+      $ref: '#/channels/votingsCatalog'
+    messages:
+      - $ref: '#/channels/votingsCatalog/messages/votingCatalog'
+  publishPolicyControl:
+    action: send
+    channel:
+      $ref: '#/channels/votingPolicyControl'
+    messages:
+      - $ref: '#/channels/votingPolicyControl/messages/policyControl'
+  publishVotingCatalogLatest:
+    action: send
+    channel:
+      $ref: '#/channels/votingCatalogLatest'
+    messages:
+      - $ref: '#/channels/votingCatalogLatest/messages/votingCatalogLatest'
+  publishPolicyLatest:
+    action: send
+    channel:
+      $ref: '#/channels/votingPolicyLatest'
+    messages:
+      - $ref: '#/channels/votingPolicyLatest/messages/policyLatest'
+  publishResultsSnapshot:
+    action: send
+    channel:
+      $ref: '#/channels/votingResultsSnapshot'
+    messages:
+      - $ref: '#/channels/votingResultsSnapshot/messages/resultsSnapshot'
+  consumeVoteRaw:
+    action: receive
+    channel:
+      $ref: '#/channels/votesRaw'
+    messages:
+      - $ref: '#/channels/votesRaw/messages/voteRaw'
+  consumeVotingCatalog:
+    action: receive
+    channel:
+      $ref: '#/channels/votingsCatalog'
+    messages:
+      - $ref: '#/channels/votingsCatalog/messages/votingCatalog'
+  consumePolicyControl:
+    action: receive
+    channel:
+      $ref: '#/channels/votingPolicyControl'
+    messages:
+      - $ref: '#/channels/votingPolicyControl/messages/policyControl'
+  consumeResultsSnapshot:
+    action: receive
+    channel:
+      $ref: '#/channels/votingResultsSnapshot'
+    messages:
+      - $ref: '#/channels/votingResultsSnapshot/messages/resultsSnapshot'
+components:
+  messages:
+    VoteRaw:
+      name: VoteRaw
+      title: Vote raw event
+      payload:
+        $ref: '../schemas/jsonschema/votes.raw.json'
+    VotingCatalog:
+      name: VotingCatalog
+      title: Voting catalog event
+      payload:
+        $ref: '../schemas/jsonschema/votings.catalog.json'
+    PolicyControl:
+      name: PolicyControl
+      title: Policy control event
+      payload:
+        $ref: '../schemas/jsonschema/voting-policy-control.json'
+    ResultsSnapshot:
+      name: ResultsSnapshot
+      title: Materialized voting results snapshot
+      payload:
+        $ref: '../schemas/jsonschema/voting-results-snapshot.json'
+    VotingCatalogLatest:
+      name: VotingCatalogLatest
+      title: Latest voting catalog record
+      payload:
+        $ref: '../schemas/jsonschema/voting-catalog-latest.json'
+    PolicyLatest:
+      name: PolicyLatest
+      title: Latest policy state record
+      payload:
+        $ref: '../schemas/jsonschema/voting-policy-latest.json'
