@@ -6,5 +6,5 @@ target
 docs/performance-artifacts/**/k6-*.json
 !docs/performance-artifacts/**/*-summary.json
 !docs/performance-artifacts/**/README.md
-flake.*
 node_modules
+.direnv

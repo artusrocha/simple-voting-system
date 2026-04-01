@@ -47,8 +47,9 @@ BENCHMARK_MULTI_API_BASE_URL ?= http://localhost:3002
 BENCHMARK_CONTROL_API_BASE_URL ?= http://localhost:8080
 BENCHMARK_SYNC_API_URLS ?= http://localhost:8080,http://localhost:8082
 
-help: ## Show available targets
-	@awk 'BEGIN {FS = ":.*## "; printf "\nTargets:\n\n"} /^[a-zA-Z0-9_.-]+:.*## / {printf "  %-24s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
+help: ## Shows available Makefile commands in a list
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## " }; {printf "make \033[36m%-30s\033[0m %s\n", $$1, $$2}'
+
 
 config: ## Validate config file exists
 	@test -f "$(CONFIG)" || (echo "Config file not found: $(CONFIG)" && exit 1)
