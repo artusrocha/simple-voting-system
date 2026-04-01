@@ -23,6 +23,26 @@ RUNTIME="${RUNTIME:-podman}"
 COMPOSE_NETWORK_NAME="${COMPOSE_NETWORK_NAME:-voting-platform-network}"
 LAST_OUTPUT_FILE=""
 LAST_SUMMARY_FILE=""
+LAST_SUMMARY_MARKDOWN_FILE=""
+
+render_summary_report() {
+    local scenario="$1"
+    local summary_file="$2"
+    local markdown_file="${summary_file%.json}.md"
+    local rendered_text
+
+    rendered_text=$(python3 "$PROJECT_ROOT/scripts/render-loadtest-summary.py" "$summary_file" "$scenario") || fail "Failed to render human-readable summary for $summary_file"
+
+    if [[ ! -f "$markdown_file" ]]; then
+        fail "Expected markdown summary was not created: $markdown_file"
+    fi
+
+    LAST_SUMMARY_MARKDOWN_FILE="$markdown_file"
+
+    log "Summary saved to: $summary_file"
+    log "Summary markdown saved to: $markdown_file"
+    printf '\n%s\n\n' "$rendered_text"
+}
 
 log() {
     printf '[loadtest] %s\n' "$*"
@@ -288,8 +308,9 @@ run_k6() {
         LAST_OUTPUT_FILE="$output_file"
     fi
     LAST_SUMMARY_FILE="$summary_file"
+    LAST_SUMMARY_MARKDOWN_FILE=""
 
-    log "Summary saved to: $summary_file"
+    render_summary_report "$scenario" "$summary_file"
     if [[ "$K6_CAPTURE_RAW" == "true" ]]; then
         log "Raw results saved to: $output_file"
     fi

@@ -126,9 +126,12 @@ The k6 script includes these scenarios:
 
 Results are printed to stdout and written by the runner to `_/loadtest-results`.
 
+The JSON summary remains the canonical machine-readable artifact. The Markdown summary mirrors the key metrics in a format suitable for quick review and README-style reporting.
+
 By default, the runner stores:
 
 - k6 summary JSON (`k6-<scenario>-<timestamp>-summary.json`)
+- human-readable Markdown summary (`k6-<scenario>-<timestamp>-summary.md`)
 
 When `K6_CAPTURE_RAW=true`, the runner also stores:
 
